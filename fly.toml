@@ -1,0 +1,42 @@
+app            = "crossnote-labeler"
+primary_region = "sjc"
+
+[env]
+  PORT         = "8080"
+  NODE_ENV     = "production"
+  DATABASE_URL = "file:/data/labeler.db"
+
+[mounts]
+  source      = "crossnote_data"
+  destination = "/data"
+
+[[services]]
+  protocol      = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port        = 80
+    handlers    = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval     = "30s"
+    timeout      = "10s"
+    grace_period = "60s"
+    method       = "GET"
+    path         = "/"
+
+[vm]
+  memory   = "512mb"
+  cpu_kind = "shared"
+  cpus     = 1
+
+# Required secrets — set via `fly secrets set KEY=value`:
+#   LABELER_DID         — DID of crossnote.bsky.social (did:plc:...)
+#   LABELER_SIGNING_KEY — hex signing key from `npx @skyware/labeler setup`
+#   BSKY_HANDLE         — crossnote.bsky.social
+#   BSKY_PASSWORD       — app password for the crossnote account
