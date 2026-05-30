@@ -1,3 +1,4 @@
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -6,9 +7,24 @@ from pydantic import BaseModel
 from pipeline import retrieval_reranking as pipeline
 
 
+def _log_stats_loop():
+    import time
+    while True:
+        time.sleep(60)
+        s = pipeline.stats
+        if s["received"] > 0:
+            print(
+                f"[pipeline] received={s['received']} "
+                f"bm25={s['passed_bm25']} ({100*s['passed_bm25']/s['received']:.1f}%) "
+                f"ce={s['passed_ce']} "
+                f"llm={s['passed_llm']}"
+            )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     pipeline.load()
+    threading.Thread(target=_log_stats_loop, daemon=True).start()
     yield
 
 
