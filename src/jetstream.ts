@@ -1,6 +1,6 @@
 import { Jetstream } from "@skyware/jetstream";
 import { LabelerServer } from "./labeler-server.js";
-import { detectLabel } from "./detect.js";
+import { detectLabel, throttled } from "./detect.js";
 import { postComment } from "./comment.js";
 import * as db from "./db.js";
 
@@ -24,7 +24,7 @@ export function startJetstream(labeler: LabelerServer): void {
   let errors = 0;
 
   setInterval(() => {
-    console.log(`Stats: ${processed} processed, ${labeled} labeled, ${errors} errors`);
+    console.log(`Stats: ${processed} processed, ${labeled} labeled, ${errors} errors, ${throttled} throttled`);
   }, 60_000);
 
   jetstream.on("commit", async (event) => {

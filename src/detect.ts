@@ -11,6 +11,7 @@ const socketAgent = new Agent({
 // Posts that arrive while Python is busy are dropped (not queued).
 const MAX_IN_FLIGHT = 5;
 let inFlight = 0;
+export let throttled = 0;
 
 // Cached once the socket file is first seen — avoids repeated fs calls.
 let socketReady = false;
@@ -29,7 +30,7 @@ export async function detectLabel(text: string): Promise<DetectionResult | null>
     socketReady = true;
   }
 
-  if (inFlight >= MAX_IN_FLIGHT) return null;
+  if (inFlight >= MAX_IN_FLIGHT) { throttled++; return null; }
 
   inFlight++;
   try {
