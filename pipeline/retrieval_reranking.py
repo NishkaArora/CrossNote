@@ -33,7 +33,7 @@ NOTES_PATH  = Path(os.getenv("NOTES_PATH",  "/data/cn_crh_notes.tsv"))
 BM25_PATH   = Path(os.getenv("BM25_PATH",   "/data/bm25_index.pkl"))
 MODEL_CACHE = Path(os.getenv("SENTENCE_TRANSFORMERS_HOME", "/data/model_cache"))
 
-BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "40.0"))
+BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "0.7"))
 CE_CUTOFF   = float(os.getenv("CE_CUTOFF",   "2.0"))
 LLM_MODEL   = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
@@ -114,10 +114,16 @@ def analyze(text: str) -> Optional[dict]:
 
     tokens = _tokenize(text)
 
-    # ── Stage 1: BM25 pre-filter ──────────────────────────────────────────────
+    # ── Stage 1: IDF-normalized BM25 pre-filter ──────────────────────────────
+    # Normalize by sum of query term IDFs so that a 5-word query with rare
+    # factual terms is not penalized the same as a 5-word query with common words.
     bm25_scores = np.array(_bm25.get_scores(tokens))
 
-    if float(bm25_scores.max()) < BM25_CUTOFF:
+    idf_sum = sum(_bm25.idf.get(t, 0.0) for t in tokens)
+    if idf_sum == 0:
+        return None
+
+    if float(bm25_scores.max()) / idf_sum < BM25_CUTOFF:
         return None
 
     # ── Stage 2: cross-encoder reranking ─────────────────────────────────────
