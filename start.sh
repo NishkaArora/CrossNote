@@ -1,12 +1,15 @@
 #!/bin/bash
-set -e
 
 mkdir -p /data/model_cache
 
-# Start the Python pipeline server on a Unix socket
+# Start Python pipeline in background
 uvicorn pipeline.server:app --uds /tmp/pipeline.sock --log-level info &
 
-echo "Waiting for Python pipeline to initialize (models load on first run)..."
+# Start Node.js immediately so Fly's health check (GET /) passes right away.
+# detect.ts handles connection errors gracefully until Python is ready.
+npm start &
+
+echo "Waiting for Python pipeline to initialize..."
 
 MAX_WAIT=600
 WAITED=0
@@ -30,5 +33,7 @@ except:
     fi
 done
 
-echo "Python pipeline ready. Starting Node.js server..."
-npm start
+echo "Python pipeline ready."
+
+# Keep script alive — if either process exits, Fly will restart the machine
+wait

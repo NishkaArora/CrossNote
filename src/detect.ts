@@ -11,10 +11,13 @@ export interface DetectionResult {
 }
 
 export async function detectLabel(text: string): Promise<DetectionResult | null> {
+  const cleaned = text.replace(/\[crossnote test\]/gi, "").trim();
+  if (!cleaned) return null;
+
   const response = await fetch("http://localhost/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text: cleaned }),
     dispatcher: socketAgent,
   });
 

@@ -18,6 +18,7 @@ RUN pip3 install -r pipeline/requirements.txt --break-system-packages
 COPY . .
 
 RUN mkdir -p /data
+ENV PYTHONUNBUFFERED=1
 RUN chmod +x start.sh
 
 EXPOSE 8080
