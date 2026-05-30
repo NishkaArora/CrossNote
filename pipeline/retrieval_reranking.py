@@ -33,6 +33,9 @@ NOTES_PATH  = Path(os.getenv("NOTES_PATH",  "/data/cn_crh_notes.tsv"))
 BM25_PATH   = Path(os.getenv("BM25_PATH",   "/data/bm25_index.pkl"))
 MODEL_CACHE = Path(os.getenv("SENTENCE_TRANSFORMERS_HOME", "/data/model_cache"))
 
+# Point HuggingFace cache to the same directory so CrossEncoder models also persist
+os.environ.setdefault("HF_HOME", str(MODEL_CACHE))
+
 BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "0.7"))
 CE_CUTOFF   = float(os.getenv("CE_CUTOFF",   "2.0"))
 LLM_MODEL   = os.getenv("LLM_MODEL", "gpt-4o-mini")
@@ -99,10 +102,7 @@ def load() -> None:
         _bm25 = BM25Okapi([_tokenize(s) for s in _notes])
 
     print("Loading cross-encoder (ms-marco-MiniLM-L-6-v2)...")
-    _cross_encoder = CrossEncoder(
-        "cross-encoder/ms-marco-MiniLM-L-6-v2",
-        cache_folder=str(MODEL_CACHE),
-    )
+    _cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
     _ready = True
     print("Pipeline ready.")
