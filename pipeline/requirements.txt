@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pandas
+rank-bm25
+nltk
+numpy
+sentence-transformers
+openai

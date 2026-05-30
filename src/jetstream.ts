@@ -12,9 +12,10 @@ export function startJetstream(labeler: LabelerServer): void {
 
   let processed = 0;
   let labeled = 0;
+  let errors = 0;
 
   setInterval(() => {
-    console.log(`Stats: ${processed} posts processed, ${labeled} labeled`);
+    console.log(`Stats: ${processed} processed, ${labeled} labeled, ${errors} errors`);
   }, 60_000);
 
   jetstream.on("commit", async (event) => {
@@ -22,7 +23,6 @@ export function startJetstream(labeler: LabelerServer): void {
 
     processed++;
 
-    // Persist cursor every 100 events so restarts don't reprocess too much
     if (processed % 100 === 0) {
       db.setCursor(event.time_us);
     }
@@ -30,22 +30,27 @@ export function startJetstream(labeler: LabelerServer): void {
     const record = event.commit.record as { text?: string };
     if (!record.text) return;
 
-    const label = detectLabel(record.text);
-    if (!label) return;
+    try {
+      const result = await detectLabel(record.text);
+      if (!result) return;
 
-    labeled++;
-    const uri = `at://${event.did}/${event.commit.collection}/${event.commit.rkey}`;
+      labeled++;
+      const uri = `at://${event.did}/${event.commit.collection}/${event.commit.rkey}`;
 
-    const comment = "dummy comment";
+      console.log(`[LABEL] ${result.label} → ${uri}`);
+      labeler.emitLabel(uri, result.label, event.commit.cid);
+      db.logLabel(uri, event.commit.cid, result.label, record.text, result.note);
 
-    console.log(`[LABEL] ${label} → ${uri}`);
-    labeler.emitLabel(uri, label, event.commit.cid);
-    db.logLabel(uri, event.commit.cid, label, record.text, comment);
-
-    if (event.commit.cid) {
-      postComment(uri, event.commit.cid, comment).catch((e) =>
-        console.error("Failed to post comment:", e)
-      );
+      if (event.commit.cid) {
+        postComment(uri, event.commit.cid, result.note).catch((e) =>
+          console.error("Failed to post comment:", e)
+        );
+      }
+    } catch (e) {
+      errors++;
+      if (errors % 50 === 1) {
+        console.error("Detection error:", e instanceof Error ? e.message : e);
+      }
     }
   });
 

@@ -2,9 +2,11 @@ app            = "crossnote-labeler"
 primary_region = "sjc"
 
 [env]
-  PORT         = "8080"
-  NODE_ENV     = "production"
-  DATABASE_URL = "file:/data/labeler.db"
+  PORT                      = "8080"
+  NODE_ENV                  = "production"
+  DATABASE_URL              = "file:/data/labeler.db"
+  NOTES_PATH                = "/data/cn_crh_notes.tsv"
+  SENTENCE_TRANSFORMERS_HOME = "/data/model_cache"
 
 [mounts]
   source      = "crossnote_data"
@@ -26,17 +28,18 @@ primary_region = "sjc"
   [[services.http_checks]]
     interval     = "30s"
     timeout      = "10s"
-    grace_period = "60s"
+    grace_period = "360s"   # models + embeddings take 2-5 min on first run
     method       = "GET"
     path         = "/"
 
 [vm]
-  memory   = "512mb"
+  memory   = "1gb"          # sentence-transformers needs headroom
   cpu_kind = "shared"
   cpus     = 1
 
-# Required secrets — set via `fly secrets set KEY=value`:
-#   LABELER_DID         — DID of crossnote.bsky.social (did:plc:...)
-#   LABELER_SIGNING_KEY — hex signing key from `npx @skyware/labeler setup`
-#   BSKY_HANDLE         — crossnote.bsky.social
-#   BSKY_PASSWORD       — app password for the crossnote account
+# Required secrets (fly secrets set KEY=value):
+#   LABELER_DID            — DID of crossnote.bsky.social
+#   LABELER_SIGNING_KEY    — hex signing key from @skyware/labeler setup
+#   BSKY_HANDLE            — crossnote.bsky.social
+#   BSKY_PASSWORD          — app password
+#   OPENAI_API_KEY         — for future Stage 3 LLM evaluation

@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 *.db
+
+# Community Notes data (downloaded/computed locally, uploaded to Fly manually)
+data/raw/
+data/cleaned/
