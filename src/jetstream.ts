@@ -4,6 +4,15 @@ import { detectLabel } from "./detect.js";
 import { postComment } from "./comment.js";
 import * as db from "./db.js";
 
+const BSKY_CHAR_LIMIT = 300;
+const COMMENT_PREFIX  = "Similar claims were fact-checked on X: ";
+
+function formatComment(note: string): string {
+  const available = BSKY_CHAR_LIMIT - COMMENT_PREFIX.length;
+  const truncated  = note.length > available ? note.slice(0, available - 1) + "…" : note;
+  return COMMENT_PREFIX + truncated;
+}
+
 export function startJetstream(labeler: LabelerServer): void {
   const jetstream = new Jetstream({
     wantedCollections: ["app.bsky.feed.post"],
@@ -42,7 +51,7 @@ export function startJetstream(labeler: LabelerServer): void {
       db.logLabel(uri, event.commit.cid, result.label, record.text, result.note);
 
       if (event.commit.cid) {
-        postComment(uri, event.commit.cid, result.note).catch((e) =>
+        postComment(uri, event.commit.cid, formatComment(result.note)).catch((e) =>
           console.error("Failed to post comment:", e)
         );
       }
