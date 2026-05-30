@@ -33,7 +33,7 @@ primary_region = "sjc"
     path         = "/"
 
 [vm]
-  memory   = "1gb"          # sentence-transformers needs headroom
+  memory   = "2gb"
   cpu_kind = "shared"
   cpus     = 1
 
