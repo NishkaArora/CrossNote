@@ -37,7 +37,7 @@ BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "58.913"))
 CE_CUTOFF   = float(os.getenv("CE_CUTOFF",   "2.0"))
 LLM_MODEL   = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
-BM25_TOP_K  = 50  # candidates passed to cross-encoder
+BM25_TOP_K  = 20  # candidates passed to cross-encoder
 
 _SYSTEM_PROMPT = (
     "You are checking whether a Community Note applies to a Bluesky post. "
