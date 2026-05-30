@@ -36,7 +36,7 @@ MODEL_CACHE = Path(os.getenv("SENTENCE_TRANSFORMERS_HOME", "/data/model_cache"))
 # Point HuggingFace cache to the same directory so CrossEncoder models also persist
 os.environ.setdefault("HF_HOME", str(MODEL_CACHE))
 
-BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "0.7"))
+BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "0.78"))
 CE_CUTOFF   = float(os.getenv("CE_CUTOFF",   "2.0"))
 LLM_MODEL   = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
