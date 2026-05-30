@@ -15,9 +15,17 @@ db.exec(`
     cid       TEXT,
     val       TEXT NOT NULL,
     text      TEXT NOT NULL,
+    comment   TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// Migrate existing databases that predate the comment column
+try {
+  db.exec("ALTER TABLE labels ADD COLUMN comment TEXT");
+} catch {
+  // Column already exists — nothing to do
+}
 
 export function getCursor(): number | undefined {
   const row = db
@@ -36,9 +44,10 @@ export function logLabel(
   uri: string,
   cid: string | undefined,
   val: string,
-  text: string
+  text: string,
+  comment: string | undefined
 ): void {
   db.prepare(
-    "INSERT INTO labels (uri, cid, val, text) VALUES (?, ?, ?, ?)"
-  ).run(uri, cid ?? null, val, text);
+    "INSERT INTO labels (uri, cid, val, text, comment) VALUES (?, ?, ?, ?, ?)"
+  ).run(uri, cid ?? null, val, text, comment ?? null);
 }

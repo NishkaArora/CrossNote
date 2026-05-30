@@ -36,12 +36,14 @@ export function startJetstream(labeler: LabelerServer): void {
     labeled++;
     const uri = `at://${event.did}/${event.commit.collection}/${event.commit.rkey}`;
 
+    const comment = "dummy comment";
+
     console.log(`[LABEL] ${label} → ${uri}`);
     labeler.emitLabel(uri, label, event.commit.cid);
-    db.logLabel(uri, event.commit.cid, label, record.text);
+    db.logLabel(uri, event.commit.cid, label, record.text, comment);
 
     if (event.commit.cid) {
-      postComment(uri, event.commit.cid, "dummy comment").catch((e) =>
+      postComment(uri, event.commit.cid, comment).catch((e) =>
         console.error("Failed to post comment:", e)
       );
     }

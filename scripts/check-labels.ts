@@ -13,9 +13,9 @@ const db = new Database(DB_PATH);
 
 const rows = db
   .prepare(
-    "SELECT id, val, uri, text, createdAt FROM labels ORDER BY id DESC LIMIT ?"
+    "SELECT id, val, uri, text, comment, createdAt FROM labels ORDER BY id DESC LIMIT ?"
   )
-  .all(limit) as { id: number; val: string; uri: string; text: string; createdAt: string }[];
+  .all(limit) as { id: number; val: string; uri: string; text: string; comment: string | null; createdAt: string }[];
 
 if (rows.length === 0) {
   console.log("No labels in database yet.");
@@ -23,9 +23,10 @@ if (rows.length === 0) {
   console.log(`Last ${rows.length} label(s):\n`);
   for (const row of rows) {
     console.log(`[${row.id}] ${row.createdAt}`);
-    console.log(`  Label : ${row.val}`);
-    console.log(`  URI   : ${row.uri}`);
-    console.log(`  Text  : ${row.text.slice(0, 120)}`);
+    console.log(`  Label   : ${row.val}`);
+    console.log(`  URI     : ${row.uri}`);
+    console.log(`  Post    : ${row.text.slice(0, 120)}`);
+    console.log(`  Comment : ${row.comment ?? "(none)"}`);
     console.log();
   }
 }
