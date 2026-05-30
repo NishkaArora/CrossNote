@@ -6,3 +6,7 @@ dist/
 # Community Notes data (downloaded/computed locally, uploaded to Fly manually)
 data/raw/
 data/cleaned/
+
+# Python bytecode
+__pycache__/
+*.pyc

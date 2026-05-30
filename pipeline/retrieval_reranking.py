@@ -51,10 +51,13 @@ _SYSTEM_PROMPT = (
 _tokenizer = TweetTokenizer(preserve_case=False, strip_handles=False, reduce_len=False)
 _openai    = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("OPENAI_API_KEY") else None
 
-_ready:         bool                  = False
-_notes:         list[str]             = []
-_bm25:          Optional[BM25Okapi]  = None
-_cross_encoder: Optional[CrossEncoder] = None
+_ready:         bool                    = False
+_notes:         list[str]               = []
+_bm25:          Optional[BM25Okapi]     = None
+_cross_encoder: Optional[CrossEncoder]  = None
+
+# Stage-level counters — reset on restart, visible via /stats
+stats = {"received": 0, "passed_bm25": 0, "passed_ce": 0, "passed_llm": 0}
 
 
 def _tokenize(text: str) -> list[str]:
@@ -114,6 +117,8 @@ def analyze(text: str) -> Optional[dict]:
 
     tokens = _tokenize(text)
 
+    stats["received"] += 1
+
     # ── Stage 1: IDF-normalized BM25 pre-filter ──────────────────────────────
     # Normalize by sum of query term IDFs so that a 5-word query with rare
     # factual terms is not penalized the same as a 5-word query with common words.
@@ -126,6 +131,8 @@ def analyze(text: str) -> Optional[dict]:
     if float(bm25_scores.max()) / idf_sum < BM25_CUTOFF:
         return None
 
+    stats["passed_bm25"] += 1
+
     # ── Stage 2: cross-encoder reranking ─────────────────────────────────────
     candidates = bm25_scores.argsort()[::-1][:BM25_TOP_K].tolist()
 
@@ -136,10 +143,12 @@ def analyze(text: str) -> Optional[dict]:
     if best_score < CE_CUTOFF:
         return None
 
+    stats["passed_ce"] += 1
     best_note = _notes[candidates[best_local]]
 
     # ── Stage 3: LLM verification ─────────────────────────────────────────────
     if _openai is not None and not _llm_applies(text, best_note):
         return None
 
+    stats["passed_llm"] += 1
     return {"note": best_note, "score": best_score}

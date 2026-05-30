@@ -36,3 +36,8 @@ def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
 @app.get("/health")
 def health() -> dict:
     return {"ready": pipeline.is_ready()}
+
+
+@app.get("/stats")
+def stats() -> dict:
+    return pipeline.stats
