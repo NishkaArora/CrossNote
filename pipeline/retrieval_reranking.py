@@ -33,7 +33,7 @@ NOTES_PATH  = Path(os.getenv("NOTES_PATH",  "/data/cn_crh_notes.tsv"))
 BM25_PATH   = Path(os.getenv("BM25_PATH",   "/data/bm25_index.pkl"))
 MODEL_CACHE = Path(os.getenv("SENTENCE_TRANSFORMERS_HOME", "/data/model_cache"))
 
-BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "58.913"))
+BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "40.0"))
 CE_CUTOFF   = float(os.getenv("CE_CUTOFF",   "2.0"))
 LLM_MODEL   = os.getenv("LLM_MODEL", "gpt-4o-mini")
 
