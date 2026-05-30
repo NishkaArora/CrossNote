@@ -1,6 +1,7 @@
 import { Jetstream } from "@skyware/jetstream";
 import { LabelerServer } from "./labeler-server.js";
 import { detectLabel } from "./detect.js";
+import { postComment } from "./comment.js";
 import * as db from "./db.js";
 
 export function startJetstream(labeler: LabelerServer): void {
@@ -38,6 +39,12 @@ export function startJetstream(labeler: LabelerServer): void {
     console.log(`[LABEL] ${label} → ${uri}`);
     labeler.emitLabel(uri, label, event.commit.cid);
     db.logLabel(uri, event.commit.cid, label, record.text);
+
+    if (event.commit.cid) {
+      postComment(uri, event.commit.cid, "dummy comment").catch((e) =>
+        console.error("Failed to post comment:", e)
+      );
+    }
   });
 
   jetstream.on("error", (error) => {
