@@ -15,6 +15,7 @@ Stage 3 — LLM verification (~500ms per call)
 
 import os
 import pickle
+import re
 import time
 from pathlib import Path
 from typing import Optional
@@ -110,6 +111,7 @@ def analyze(text: str) -> Optional[dict]:
         return None
 
     dbg = "[crossnote test]" in text.lower()
+    text = re.sub(r'\[crossnote test\]', '', text, flags=re.IGNORECASE).strip()
     t_start = time.perf_counter()
 
     tokens = _tokenize(text)

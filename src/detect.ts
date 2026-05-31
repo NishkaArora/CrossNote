@@ -73,10 +73,7 @@ function pump() {
 }
 
 export async function detectLabel(text: string): Promise<DetectionResult | null> {
-  const cleaned = text.replace(/\[crossnote test\]/gi, "").trim();
-  if (!cleaned) return null;
-
-  if (!passesPreFilter(cleaned)) {
+  if (!passesPreFilter(text)) {
     preFiltered++;
     return null;
   }
@@ -93,7 +90,7 @@ export async function detectLabel(text: string): Promise<DetectionResult | null>
 
   try {
     return await new Promise<DetectionResult | null>((resolve, reject) => {
-      queue.push({ text: cleaned, resolve, reject });
+      queue.push({ text, resolve, reject });
       pump();
     });
   } catch {
