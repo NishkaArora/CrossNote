@@ -63,8 +63,11 @@ export function startJetstream(labeler: LabelerServer): void {
     intervalStart = Date.now();
   }, 60_000);
 
+  const ownDid = process.env.LABELER_DID!;
+
   jetstream.on("commit", async (event) => {
     if (event.commit.operation === "delete") return;
+    if (event.did === ownDid) return;
 
     processed++;
     intervalPosts++;
