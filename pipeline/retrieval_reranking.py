@@ -1,20 +1,16 @@
 """
-Three-stage retrieval and reranking pipeline over Community Notes.
+Three-stage pipeline over Community Notes.
 
-Stage 1 — BM25 pre-filter (runs on every post, ~3ms)
-  Top-1 BM25 score checked against a 95th-percentile threshold.
-  Posts below the threshold are dropped immediately.
+Stage 1 — IDF-normalized BM25 pre-filter (~3ms)
+  Keeps the top-5 notes if best_score / idf_sum >= BM25_CUTOFF.
 
-Stage 2 — cross-encoder reranking (runs on ~5% of posts, ~50ms)
-  Top-50 BM25 candidates are reranked by cross-encoder score.
-  Drops posts whose best score is below CE_CUTOFF.
+Stage 2 — Cross-encoder reranking (~50ms on 5 candidates)
+  Reranks the top-5 BM25 candidates. Drops posts whose best CE score
+  is below CE_CUTOFF.
 
-Stage 3 — LLM verification (runs only on Stage 2 survivors, ~500ms)
-  Asks the LLM whether the top Community Note directly applies to the post.
+Stage 3 — LLM verification (~500ms per call)
+  Calls the LLM on each note in ranked order; returns on first "Yes".
   Skipped if OPENAI_API_KEY is not set.
-
-Note: dense retrieval has been removed from Stage 1 for throughput.
-It will be added back with a faster ONNX model.
 """
 
 import os
@@ -33,14 +29,12 @@ NOTES_PATH  = Path(os.getenv("NOTES_PATH",  "/data/cn_crh_notes.tsv"))
 BM25_PATH   = Path(os.getenv("BM25_PATH",   "/data/bm25_index.pkl"))
 MODEL_CACHE = Path(os.getenv("SENTENCE_TRANSFORMERS_HOME", "/data/model_cache"))
 
-# Point HuggingFace cache to the same directory so CrossEncoder models also persist
 os.environ.setdefault("HF_HOME", str(MODEL_CACHE))
 
-BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "0.78"))
+BM25_CUTOFF = float(os.getenv("BM25_CUTOFF", "1.0"))
 CE_CUTOFF   = float(os.getenv("CE_CUTOFF",   "2.0"))
+BM25_TOP_K  = 5
 LLM_MODEL   = os.getenv("LLM_MODEL", "gpt-4o-mini")
-
-BM25_TOP_K  = 20  # candidates passed to cross-encoder
 
 _SYSTEM_PROMPT = (
     "You are checking whether a Community Note applies to a Bluesky post. "
@@ -51,12 +45,11 @@ _SYSTEM_PROMPT = (
 _tokenizer = TweetTokenizer(preserve_case=False, strip_handles=False, reduce_len=False)
 _openai    = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) if os.getenv("OPENAI_API_KEY") else None
 
-_ready:         bool                    = False
-_notes:         list[str]               = []
-_bm25:          Optional[BM25Okapi]     = None
-_cross_encoder: Optional[CrossEncoder]  = None
+_ready:         bool                   = False
+_notes:         list[str]              = []
+_bm25:          Optional[BM25Okapi]    = None
+_cross_encoder: Optional[CrossEncoder] = None
 
-# Stage-level counters — reset on restart, visible via /stats
 stats = {"received": 0, "passed_bm25": 0, "passed_ce": 0, "passed_llm": 0}
 
 
@@ -101,11 +94,11 @@ def load() -> None:
         with open(BM25_PATH, "rb") as f:
             _bm25 = pickle.load(f)
     else:
-        print("BM25 index not found — building from scratch (run data/precompute.py to avoid this)...")
+        print("BM25 index not found — building from scratch...")
         _bm25 = BM25Okapi([_tokenize(s) for s in _notes])
 
     print("Loading cross-encoder (ms-marco-MiniLM-L-6-v2)...")
-    _cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    _cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", cache_folder=str(MODEL_CACHE))
 
     _ready = True
     print("Pipeline ready.")
@@ -116,39 +109,34 @@ def analyze(text: str) -> Optional[dict]:
         return None
 
     tokens = _tokenize(text)
-
     stats["received"] += 1
 
     # ── Stage 1: IDF-normalized BM25 pre-filter ──────────────────────────────
-    # Normalize by sum of query term IDFs so that a 5-word query with rare
-    # factual terms is not penalized the same as a 5-word query with common words.
     bm25_scores = np.array(_bm25.get_scores(tokens))
-
     idf_sum = sum(_bm25.idf.get(t, 0.0) for t in tokens)
-    if idf_sum == 0:
-        return None
-
-    if float(bm25_scores.max()) / idf_sum < BM25_CUTOFF:
+    if idf_sum == 0 or float(bm25_scores.max()) / idf_sum < BM25_CUTOFF:
         return None
 
     stats["passed_bm25"] += 1
 
-    # ── Stage 2: cross-encoder reranking ─────────────────────────────────────
-    candidates = bm25_scores.argsort()[::-1][:BM25_TOP_K].tolist()
+    # ── Stage 2: Cross-encoder reranking ─────────────────────────────────────
+    top_indices = bm25_scores.argsort()[::-1][:BM25_TOP_K].tolist()
+    ce_scores   = _cross_encoder.predict([[text, _notes[i]] for i in top_indices])
+    ranked      = sorted(zip(ce_scores, top_indices), key=lambda x: x[0], reverse=True)
 
-    ce_scores  = _cross_encoder.predict([[text, _notes[i]] for i in candidates], batch_size=32)
-    best_local = int(np.argmax(ce_scores))
-    best_score = float(ce_scores[best_local])
-
-    if best_score < CE_CUTOFF:
+    if float(ranked[0][0]) < CE_CUTOFF:
         return None
 
     stats["passed_ce"] += 1
-    best_note = _notes[candidates[best_local]]
 
     # ── Stage 3: LLM verification ─────────────────────────────────────────────
-    if _openai is not None and not _llm_applies(text, best_note):
-        return None
+    if _openai is None:
+        best_score, best_idx = ranked[0]
+        return {"note": _notes[best_idx], "score": float(best_score)}
 
-    stats["passed_llm"] += 1
-    return {"note": best_note, "score": best_score}
+    for ce_score, idx in ranked:
+        if _llm_applies(text, _notes[idx]):
+            stats["passed_llm"] += 1
+            return {"note": _notes[idx], "score": float(ce_score)}
+
+    return None

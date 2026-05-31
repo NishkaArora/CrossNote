@@ -9,7 +9,7 @@ const socketAgent = new Agent({
 
 // Max concurrent requests to the Python pipeline.
 // Posts that arrive while Python is busy are dropped (not queued).
-const MAX_IN_FLIGHT = 5;
+const MAX_IN_FLIGHT = 20;
 let inFlight = 0;
 export let throttled = 0;
 
@@ -47,6 +47,9 @@ export async function detectLabel(text: string): Promise<DetectionResult | null>
     if (!result.label || !result.note) return null;
 
     return { label: "misinformation", note: result.note };
+  } catch (e) {
+    socketReady = false;
+    throw e;
   } finally {
     inFlight--;
   }
