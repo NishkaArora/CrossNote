@@ -15,6 +15,7 @@ Stage 3 — LLM verification (~500ms per call)
 
 import os
 import pickle
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -140,3 +141,73 @@ def analyze(text: str) -> Optional[dict]:
             return {"note": _notes[idx], "score": float(ce_score)}
 
     return None
+
+
+def debug_analyze(text: str) -> dict:
+    result: dict = {"text": text, "stages": {}}
+
+    tokens = _tokenize(text)
+
+    # Stage 1
+    t0 = time.perf_counter()
+    bm25_scores = np.array(_bm25.get_scores(tokens))
+    idf_sum = sum(_bm25.idf.get(t, 0.0) for t in tokens)
+    bm25_norm = float(bm25_scores.max()) / idf_sum if idf_sum > 0 else 0.0
+    bm25_ms = (time.perf_counter() - t0) * 1000
+
+    top_indices = bm25_scores.argsort()[::-1][:BM25_TOP_K].tolist()
+    result["stages"]["bm25"] = {
+        "ms": round(bm25_ms, 1),
+        "normalized_score": round(bm25_norm, 4),
+        "cutoff": BM25_CUTOFF,
+        "passed": bm25_norm >= BM25_CUTOFF,
+        "top_candidates": [
+            {"idx": i, "score": round(float(bm25_scores[i]), 3), "note": _notes[i][:80]}
+            for i in top_indices
+        ],
+    }
+
+    if bm25_norm < BM25_CUTOFF:
+        return result
+
+    # Stage 2
+    t1 = time.perf_counter()
+    ce_scores = _cross_encoder.predict([[text, _notes[i]] for i in top_indices])
+    ce_ms = (time.perf_counter() - t1) * 1000
+    ranked = sorted(zip(ce_scores, top_indices), key=lambda x: x[0], reverse=True)
+    best_ce_score = float(ranked[0][0])
+
+    result["stages"]["cross_encoder"] = {
+        "ms": round(ce_ms, 1),
+        "best_score": round(best_ce_score, 4),
+        "cutoff": CE_CUTOFF,
+        "passed": best_ce_score >= CE_CUTOFF,
+        "ranked": [
+            {"score": round(float(s), 4), "note": _notes[i][:80]}
+            for s, i in ranked
+        ],
+    }
+
+    if best_ce_score < CE_CUTOFF:
+        return result
+
+    # Stage 3
+    if _openai is None:
+        result["stages"]["llm"] = {"skipped": "no OPENAI_API_KEY"}
+        return result
+
+    llm_results = []
+    for ce_score, idx in ranked:
+        t2 = time.perf_counter()
+        applies = _llm_applies(text, _notes[idx])
+        llm_ms = (time.perf_counter() - t2) * 1000
+        llm_results.append({
+            "note": _notes[idx][:80],
+            "applies": applies,
+            "ms": round(llm_ms, 1),
+        })
+        if applies:
+            break
+
+    result["stages"]["llm"] = {"calls": llm_results}
+    return result

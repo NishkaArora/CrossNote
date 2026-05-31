@@ -57,3 +57,8 @@ def health() -> dict:
 @app.get("/stats")
 def stats() -> dict:
     return pipeline.stats
+
+
+@app.post("/debug")
+def debug(req: AnalyzeRequest) -> dict:
+    return pipeline.debug_analyze(req.text)
