@@ -51,7 +51,7 @@ def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
 
 @app.get("/health")
 def health() -> dict:
-    return {"ready": pipeline.is_ready()}
+    return {"ready": pipeline.is_ready(), "llm": pipeline._openai is not None}
 
 
 @app.get("/stats")
