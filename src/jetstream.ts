@@ -1,7 +1,7 @@
 import { Jetstream } from "@skyware/jetstream";
 import { appendFileSync } from "fs";
 import { LabelerServer } from "./labeler-server.js";
-import { detectLabel, throttled } from "./detect.js";
+import { detectLabel, throttled, preFiltered } from "./detect.js";
 import { postComment } from "./comment.js";
 import * as db from "./db.js";
 
@@ -19,12 +19,13 @@ export interface JetstreamStats {
   processed: number;
   labeled: number;
   errors: number;
+  preFiltered: number;
   throttled: number;
   postsPerSec: number;
 }
 
 export let currentStats: JetstreamStats = {
-  processed: 0, labeled: 0, errors: 0, throttled: 0, postsPerSec: 0,
+  processed: 0, labeled: 0, errors: 0, preFiltered: 0, throttled: 0, postsPerSec: 0,
 };
 
 export function startJetstream(labeler: LabelerServer): void {
@@ -41,7 +42,7 @@ export function startJetstream(labeler: LabelerServer): void {
 
   // Write CSV header if file doesn't exist yet.
   try {
-    appendFileSync(RATE_CSV_PATH, "timestamp,posts_per_sec,processed,labeled,errors,throttled\n", { flag: "ax" });
+    appendFileSync(RATE_CSV_PATH, "timestamp,posts_per_sec,processed,labeled,errors,pre_filtered,throttled\n", { flag: "ax" });
   } catch {}
 
   setInterval(() => {
@@ -49,15 +50,15 @@ export function startJetstream(labeler: LabelerServer): void {
     const postsPerSec = parseFloat((intervalPosts / elapsed).toFixed(2));
     const ts = new Date().toISOString();
 
-    console.log(`Stats: ${processed} processed, ${labeled} labeled, ${errors} errors, ${throttled} throttled, ${postsPerSec} posts/sec`);
+    console.log(`Stats: ${processed} processed, ${labeled} labeled, ${errors} errors, ${preFiltered} pre-filtered, ${throttled} throttled, ${postsPerSec} posts/sec`);
 
     try {
-      appendFileSync(RATE_CSV_PATH, `${ts},${postsPerSec},${processed},${labeled},${errors},${throttled}\n`);
+      appendFileSync(RATE_CSV_PATH, `${ts},${postsPerSec},${processed},${labeled},${errors},${preFiltered},${throttled}\n`);
     } catch (e) {
       console.error("Failed to write rate CSV:", e instanceof Error ? e.message : e);
     }
 
-    currentStats = { processed, labeled, errors, throttled, postsPerSec };
+    currentStats = { processed, labeled, errors, preFiltered, throttled, postsPerSec };
     intervalPosts = 0;
     intervalStart = Date.now();
   }, 60_000);

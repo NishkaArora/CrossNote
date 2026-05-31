@@ -9,19 +9,41 @@ const socketAgent = new Agent({
 
 // Max concurrent requests to Python and max posts waiting in queue.
 // Posts that arrive when the queue is full are dropped.
-const MAX_CONCURRENT = 2;
-const MAX_QUEUE      = 200;
+const MAX_CONCURRENT = 4;
+const MAX_QUEUE      = 400;
+
+// Pre-filter thresholds — cheap Node-side checks before touching Python.
+const MIN_WORDS   = 8;    // too short to contain a checkable claim
+const MIN_ASCII_RATIO = 0.5; // < 50% ASCII letters → likely non-English
 
 type Task = { text: string; resolve: (r: DetectionResult | null) => void; reject: (e: unknown) => void };
 const queue: Task[] = [];
 let inFlight = 0;
-export let throttled = 0;
+export let throttled   = 0;
+export let preFiltered = 0;
 
 let socketReady = false;
 
 export interface DetectionResult {
   label: "misinformation";
   note: string;
+}
+
+function passesPreFilter(text: string): boolean {
+  const words = text.trim().split(/\s+/);
+  if (words.length < MIN_WORDS) return false;
+
+  // Count ASCII letters vs total letters to detect non-English scripts.
+  let ascii = 0, total = 0;
+  for (const ch of text) {
+    if (/\p{L}/u.test(ch)) {
+      total++;
+      if (/[a-zA-Z]/.test(ch)) ascii++;
+    }
+  }
+  if (total > 0 && ascii / total < MIN_ASCII_RATIO) return false;
+
+  return true;
 }
 
 async function _callPipeline(text: string): Promise<DetectionResult | null> {
@@ -53,6 +75,11 @@ function pump() {
 export async function detectLabel(text: string): Promise<DetectionResult | null> {
   const cleaned = text.replace(/\[crossnote test\]/gi, "").trim();
   if (!cleaned) return null;
+
+  if (!passesPreFilter(cleaned)) {
+    preFiltered++;
+    return null;
+  }
 
   if (!socketReady) {
     if (!existsSync(SOCKET_PATH)) return null;

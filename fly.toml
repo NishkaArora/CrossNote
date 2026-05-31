@@ -35,9 +35,9 @@ primary_region = "sjc"
     path         = "/"
 
 [vm]
-  memory   = "2gb"
-  cpu_kind = "shared"
-  cpus     = 1
+  memory   = "4gb"
+  cpu_kind = "performance"
+  cpus     = 2
 
 # Required secrets (fly secrets set KEY=value):
 #   LABELER_DID            — DID of crossnote.bsky.social
