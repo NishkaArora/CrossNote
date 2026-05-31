@@ -11,7 +11,7 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS labels (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
-    uri       TEXT NOT NULL,
+    uri       TEXT NOT NULL UNIQUE,
     cid       TEXT,
     val       TEXT NOT NULL,
     text      TEXT NOT NULL,
@@ -40,6 +40,11 @@ export function setCursor(cursor: number): void {
   ).run(String(cursor));
 }
 
+export function hasLabel(uri: string): boolean {
+  const row = db.prepare("SELECT 1 FROM labels WHERE uri = ? LIMIT 1").get(uri);
+  return row !== undefined;
+}
+
 export function logLabel(
   uri: string,
   cid: string | undefined,
@@ -48,6 +53,6 @@ export function logLabel(
   comment: string | undefined
 ): void {
   db.prepare(
-    "INSERT INTO labels (uri, cid, val, text, comment) VALUES (?, ?, ?, ?, ?)"
+    "INSERT OR IGNORE INTO labels (uri, cid, val, text, comment) VALUES (?, ?, ?, ?, ?)"
   ).run(uri, cid ?? null, val, text, comment ?? null);
 }

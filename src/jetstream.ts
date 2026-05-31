@@ -78,11 +78,13 @@ export function startJetstream(labeler: LabelerServer): void {
     if (record.embed?.$type === "app.bsky.embed.images") return;
 
     try {
+      const uri = `at://${event.did}/${event.commit.collection}/${event.commit.rkey}`;
+      if (db.hasLabel(uri)) return;
+
       const result = await detectLabel(record.text);
       if (!result) return;
 
       labeled++;
-      const uri = `at://${event.did}/${event.commit.collection}/${event.commit.rkey}`;
 
       console.log(`[LABEL] ${result.label} → ${uri}`);
       labeler.emitLabel(uri, result.label, event.commit.cid);
