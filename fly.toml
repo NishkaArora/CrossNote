@@ -7,7 +7,7 @@ primary_region = "sjc"
   DATABASE_URL              = "file:/data/labeler.db"
   NOTES_PATH                = "/data/cn_crh_notes.tsv"
   BM25_CUTOFF               = "1.0"
-  DENSE_CUTOFF              = "0.4"
+  CE_CUTOFF                 = "2.0"
   SENTENCE_TRANSFORMERS_HOME = "/data/model_cache"
 
 [mounts]
