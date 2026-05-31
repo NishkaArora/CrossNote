@@ -9,7 +9,7 @@ const socketAgent = new Agent({
 
 // Max concurrent requests to Python and max posts waiting in queue.
 // Posts that arrive when the queue is full are dropped.
-const MAX_CONCURRENT = 5;
+const MAX_CONCURRENT = 2;
 const MAX_QUEUE      = 200;
 
 type Task = { text: string; resolve: (r: DetectionResult | null) => void; reject: (e: unknown) => void };

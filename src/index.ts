@@ -3,7 +3,7 @@ import express from "express";
 import http from "http";
 import WebSocket from "ws";
 import { LabelerServer } from "./labeler-server.js";
-import { startJetstream } from "./jetstream.js";
+import { startJetstream, currentStats } from "./jetstream.js";
 
 // @skyware/jetstream expects a global WebSocket; Node 20 doesn't have one built-in
 (global as any).WebSocket = WebSocket;
@@ -30,6 +30,7 @@ const PORT = parseInt(process.env.PORT ?? "8080", 10);
 const labeler = new LabelerServer(LABELER_DID);
 
 app.get("/", (_req, res) => res.send("CrossNote Labeler is running"));
+app.get("/stats", (_req, res) => res.json(currentStats));
 
 server.on("upgrade", (req, socket, head) => labeler.handleUpgrade(req, socket, head));
 
