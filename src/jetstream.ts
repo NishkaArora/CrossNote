@@ -73,8 +73,9 @@ export function startJetstream(labeler: LabelerServer): void {
       db.setCursor(event.time_us);
     }
 
-    const record = event.commit.record as { text?: string };
+    const record = event.commit.record as { text?: string; embed?: { $type?: string } };
     if (!record.text) return;
+    if (record.embed?.$type === "app.bsky.embed.images") return;
 
     try {
       const result = await detectLabel(record.text);
