@@ -45,6 +45,10 @@ export function hasLabel(uri: string): boolean {
   return row !== undefined;
 }
 
+export function removeLabel(uri: string, val: string): void {
+  db.prepare("DELETE FROM labels WHERE uri = ? AND val = ?").run(uri, val);
+}
+
 export function logLabel(
   uri: string,
   cid: string | undefined,

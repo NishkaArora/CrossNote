@@ -34,7 +34,8 @@ export class LabelerServer {
     return [...this.wss.clients].filter((c) => c.readyState === WebSocket.OPEN).length;
   }
 
-  async emitLabel(uri: string, val: string, cid?: string): Promise<void> {
+  // neg = true removes a previously emitted label.
+  async emitLabel(uri: string, val: string, cid?: string, neg = false): Promise<void> {
     if (!this.keypair) throw new Error("Signing key not loaded");
 
     const label = {
@@ -42,7 +43,7 @@ export class LabelerServer {
       src: this.did,
       uri,
       val,
-      neg: false,
+      neg,
       cts: new Date().toISOString(),
       ...(cid && { cid }),
     };

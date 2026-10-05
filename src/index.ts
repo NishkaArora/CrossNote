@@ -51,7 +51,7 @@ if (ADMIN_TOKEN) {
   });
 
   admin.get("/status", (_req, res) => {
-    res.json({ autoLabel: AUTO_LABEL, subscribers: labeler.subscriberCount() });
+    res.json({ autoLabel: AUTO_LABEL, subscribers: labeler.subscriberCount(), supportsNeg: true });
   });
 
   admin.post("/label", async (req, res) => {
@@ -65,9 +65,14 @@ if (ADMIN_TOKEN) {
       res.status(503).json({ error: "NoSubscribers", message: "No client is subscribed to the label stream" });
       return;
     }
-    await labeler.emitLabel(uri, val, cid);
-    db.logLabel(uri, cid, val, typeof text === "string" ? text : "", comment);
-    console.log(`[ADMIN LABEL] ${val} → ${uri}`);
+    const neg = req.body.neg === true;
+    await labeler.emitLabel(uri, val, cid, neg);
+    if (neg) {
+      db.removeLabel(uri, val);
+    } else {
+      db.logLabel(uri, cid, val, typeof text === "string" ? text : "", comment);
+    }
+    console.log(`[ADMIN ${neg ? "UNLABEL" : "LABEL"}] ${val} → ${uri}`);
     res.json({ ok: true, subscribers: labeler.subscriberCount() });
   });
 
