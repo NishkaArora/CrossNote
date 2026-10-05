@@ -29,6 +29,11 @@ export class LabelerServer {
     }
   }
 
+  // Labels are only delivered to clients connected at emit time (no replay).
+  subscriberCount(): number {
+    return [...this.wss.clients].filter((c) => c.readyState === WebSocket.OPEN).length;
+  }
+
   async emitLabel(uri: string, val: string, cid?: string): Promise<void> {
     if (!this.keypair) throw new Error("Signing key not loaded");
 
