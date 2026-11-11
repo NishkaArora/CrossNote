@@ -1,0 +1,93 @@
+# Models used to produce released labels/predictions.
+# "access_date" = the date the corresponding cached outputs on disk were produced
+# (verified from file timestamps / notebook execution records), not a guess.
+
+llm_dependence_flagging:
+  # Author-dependence and media-dependence exclusion flags
+  # (see ../prompts/author_dependence.txt, ../prompts/media_dependence.txt)
+  model: gpt-5.6
+  provider: OpenAI
+  revision: null  # no dated snapshot pinned; OpenAI model alias as of access_date
+  access_date: "2026-07-19"
+  api: responses.parse (OpenAI Responses API)
+  reasoning_effort: low
+  temperature: null  # not set; reasoning models under this API do not expose it
+  structured_output_schema:
+    type: pydantic
+    schema: "BinaryLabel { label: Literal[0, 1] }"
+  max_output_tokens: null  # not explicitly capped
+  batch_concurrency: 10 threads (ThreadPoolExecutor, max_workers=10)
+  retry_policy: up to 5 attempts, rate-limit-aware backoff
+
+llm_stage3_applicability:
+  # Applicability judgment (see ../prompts/applicability.txt)
+  models:
+    - name: gpt-5-nano
+      provider: OpenAI
+    - name: gpt-5.6-luna
+      provider: OpenAI
+    - name: gpt-5.6-sol
+      provider: OpenAI
+  revision: null  # OpenAI model aliases as of access_date, no dated snapshot pinned
+  access_date: "2026-09-15"  # final rerun under the current prompt (tab:stage3, model_predictions.csv)
+  deployed_pipeline_access_dates: "2026-09-09 to 2026-09-12"  # gpt-5.6-sol only, held-out precision/recall run
+  api: chat.completions.create (OpenAI Chat Completions API)
+  reasoning_effort: null  # not explicitly set; model default
+  temperature: null  # not explicitly set; model default
+  structured_output_schema:
+    type: json_schema (strict)
+    name: applicability_judgment
+    schema:
+      applicable: boolean
+      reason: string
+    required: [applicable, reason]
+    additionalProperties: false
+  max_output_tokens: null  # not explicitly capped
+  batch_concurrency: sequential (1 request at a time, resumable per-pair cache)
+  retry_policy: up to 3 attempts, exponential backoff (1s, 2s, 4s)
+  pricing_usd_per_1m_tokens:  # as used in cost estimates, not necessarily current list price
+    gpt-5-nano: {input: 0.05, output: 0.40}
+    gpt-5.6-luna: {input: 0.20, output: 1.20}
+    gpt-5.6-sol: {input: 4.00, output: 20.00}
+
+embedding_models:
+  - name: text-embedding-3-small
+    provider: OpenAI
+    used_for: [stage1_stream_filtering, stage2_candidate_ranking]
+    access_date: "2026-09-04 to 2026-09-07"
+  - name: text-embedding-3-large
+    provider: OpenAI
+    used_for: [claim_deduplication_clustering, stage1_stream_filtering, stage2_candidate_ranking, deployed_pipeline]
+    access_date: "2026-07-19 (claim clustering); 2026-09-04 to 2026-09-12 (stage 1/2/deployed)"
+    price_usd_per_1m_tokens: 0.13
+  - name: gemini-embedding-001
+    provider: Google
+    used_for: [stage1_stream_filtering, stage2_candidate_ranking]
+    access_date: "2026-09-04 to 2026-09-07"
+  - name: Alibaba-NLP/gte-modernbert-base
+    provider: HuggingFace (self-hosted)
+    revision: null  # HF main branch as pulled at access_date; no commit SHA pinned
+    used_for: [stage1_stream_filtering, stage2_candidate_ranking]
+    access_date: "2026-09-04 to 2026-09-07"
+    compute: Google Colab Pro, single NVIDIA Tesla T4 GPU (16GB)
+  - name: BAAI/bge-m3
+    provider: HuggingFace (self-hosted)
+    revision: null
+    used_for: [stage1_stream_filtering]
+    access_date: "2026-09-04 to 2026-09-07"
+    compute: Google Colab Pro, single NVIDIA Tesla T4 GPU (16GB)
+  - name: BAAI/bge-reranker-v2-m3
+    provider: HuggingFace (self-hosted)
+    revision: null
+    used_for: [stage2_candidate_ranking]
+    note: only run on the base 340-candidate corpus (no distractors added) -- see data/stage2/candidate_ranks.parquet
+    access_date: "2026-09-04 to 2026-09-07"
+    compute: Google Colab Pro, single NVIDIA Tesla T4 GPU (16GB)
+
+notes:
+  - No dated model snapshot (e.g. a specific "-2026-08-01" suffix) was pinned for any
+    OpenAI model; all calls used the bare model alias current at the access date shown.
+    Re-running against these aliases later may silently hit a different underlying
+    model version if OpenAI updates the alias.
+  - Prompt version for the Stage 3 applicability model is tracked in
+    data/stage3/model_predictions.csv's prompt_version column, not here.

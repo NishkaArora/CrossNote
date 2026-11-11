@@ -6,6 +6,10 @@ dist/
 # Community Notes data (downloaded/computed locally, uploaded to Fly manually)
 data/raw/
 data/cleaned/
+data/library/
+
+# Local Python env for library/build.py
+.venv/
 
 # Python bytecode
 __pycache__/

@@ -4,6 +4,7 @@ import http from "http";
 import WebSocket from "ws";
 import { LabelerServer } from "./labeler-server.js";
 import { startJetstream, currentStats } from "./jetstream.js";
+import { startFollowerJetstream, followerStats } from "./follower-jetstream.js";
 import * as db from "./db.js";
 
 // @skyware/jetstream expects a global WebSocket; Node 20 doesn't have one built-in
@@ -35,8 +36,12 @@ const labeler = new LabelerServer(LABELER_DID);
 const AUTO_LABEL = process.env.DISABLE_AUTO_LABEL !== "1";
 const { ADMIN_TOKEN } = process.env;
 
+// AUTO_LABEL_SCOPE=followers uses follower-jetstream.ts (only followers' posts)
+// instead of jetstream.ts (every post). Default: every post.
+const FOLLOWERS_ONLY = process.env.AUTO_LABEL_SCOPE === "followers";
+
 app.get("/", (_req, res) => res.send("CrossNote Labeler is running"));
-app.get("/stats", (_req, res) => res.json(currentStats));
+app.get("/stats", (_req, res) => res.json(FOLLOWERS_ONLY ? followerStats : currentStats));
 
 // Manual labelling for one-off scripts. Disabled unless ADMIN_TOKEN is set.
 if (ADMIN_TOKEN) {
@@ -84,7 +89,12 @@ server.on("upgrade", (req, socket, head) => labeler.handleUpgrade(req, socket, h
 server.listen(PORT, "0.0.0.0", async () => {
   await labeler.loadKey(LABELER_SIGNING_KEY!);
   console.log(`Listening on port ${PORT}`);
-  if (AUTO_LABEL) {
+  if (AUTO_LABEL && FOLLOWERS_ONLY) {
+    startFollowerJetstream(labeler).catch((e) => {
+      console.error("Follower Jetstream failed to start:", e);
+      process.exit(1);
+    });
+  } else if (AUTO_LABEL) {
     startJetstream(labeler);
   } else {
     console.log("DISABLE_AUTO_LABEL=1 — Jetstream not started, labels only via /admin/label");

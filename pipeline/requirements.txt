@@ -1,8 +1,14 @@
-fastapi
-uvicorn[standard]
-pandas
-rank-bm25
-nltk
-numpy
-sentence-transformers
-openai
+# pipeline/crossnote_server.py. scikit-learn must match the version that
+# built the library snapshot (the TF-IDF vectorizer is pickled); keep these
+# pins in step with library/requirements.txt.
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+numpy==1.26.4
+scipy==1.13.1
+pandas==2.2.3
+pyarrow==17.0.0
+scikit-learn==1.6.1
+openai==2.38.0
+pydantic==2.12.4
+pyyaml==6.0.2
+requests==2.32.3

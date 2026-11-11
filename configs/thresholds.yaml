@@ -1,0 +1,42 @@
+# Selected operating points for the deployed pipeline.
+# Full threshold sweeps (all 8 methods x 3 recall targets, with raw score
+# values) are in data/stage1/selected_thresholds.yaml -- this file records
+# only the points actually chosen for the deployed/reported pipeline.
+
+stage1_stream_filtering:
+  lexical_gate:
+    method: tfidf_unigram
+    recall_target: 1.00  # 100% known-positive recall
+    threshold: 0.1375895433401011
+    rationale: >
+      Cheapest gate first; frozen at 100% recall so it never drops a known
+      positive before the more expensive embedding gate runs.
+  embedding_gate:
+    methods_evaluated: [openai_small, openai_large, gte, bge_m3, gemini]
+    method_selected_for_deployed_pipeline: openai_large
+    recall_target: 0.99  # 99% known-positive recall
+    threshold: 0.5003167390823364
+    rationale: >
+      99% chosen over 100%: the marginal pass-through cost of the last 1% of
+      recall is disproportionate (see data/stage1/selected_thresholds.yaml
+      and Table tab:stage1-embedding).
+    reference_variant_for_recall_reporting: gemini  # both variants reported; openai_large used for deployed cost/precision run
+
+stage2_candidate_ranking:
+  top_k: 3
+  distractor_pool_size: 5000
+  method_selected_for_deployed_pipeline: openai_large  # text-embedding-3-large cosine similarity
+  rationale: >
+    Highest Recall@3 among embedding methods at the +5,000-distractor
+    configuration (100.0%, tab:stage2-ranking); reuses Stage 1's embeddings,
+    so Stage 2 adds only similarity computation, not new embedding cost.
+
+stage3_applicability:
+  model_selected_for_deployed_pipeline: gpt-5.6-sol
+  rationale: >
+    Selected for higher precision (96.0%) over gpt-5.6-luna's higher recall
+    (80.0% vs. sol's 64.7%) -- false positives attach inapplicable notes to
+    posts, so precision was prioritized (tab:stage3).
+  decision_threshold: >
+    Binary model output (applicable: true/false) from strict JSON-schema
+    structured output; no separate numeric probability threshold is applied.

@@ -1,0 +1,40 @@
+# Settings for the deployed CrossNote pipeline (library build + live matching).
+#
+# thresholds.yaml, models.yaml and ../prompts/ are copied unchanged from the
+# released artefact and record what the paper evaluated. This file records
+# where the deployment differs (models) and the deployment-only settings.
+
+library:
+  # Notes enter the library if they are CURRENTLY_RATED_HELPFUL now and were
+  # first rated Helpful (timestampMillisOfFirstNonNMRStatus, with
+  # firstNonNMRStatus == CURRENTLY_RATED_HELPFUL) in the LIBRARY_WINDOW_DAYS
+  # days before the export date. Rebuilding daily replaces any
+  # "time-sensitive" detection: old notes and notes no longer Helpful drop out.
+  LIBRARY_WINDOW_DAYS: 7
+  english_lang: en           # X API `lang` of the original post must equal this
+  x_tweet_fields: id,text,author_id,created_at,public_metrics,lang,attachments
+  x_expansions: attachments.media_keys
+  x_media_fields: media_key,type
+
+models:
+  # gpt-6.1-sol replaces gpt-5.6 (filters) and gpt-5.6-sol (Stage 3).
+  # Bare alias, no dated snapshot pinned (same as the evaluation).
+  dependence_filters:
+    model: gpt-6.1-sol
+    reasoning_effort: low
+    max_attempts: 5            # as in the evaluation's call_filter_model
+    concurrency: 10
+  stage3_applicability:
+    model: gpt-6.1-sol
+    max_attempts: 3            # as in the evaluation's call_stage3_model
+  embedding:
+    model: text-embedding-3-large
+    batch_size: 100
+    max_attempts: 5
+
+stage1:
+  min_words_exclusive: 2       # drop posts with <= 2 whitespace-separated words
+  # Thresholds are read from thresholds.yaml (stage1_stream_filtering).
+
+stage2:
+  top_k: 3

@@ -9,6 +9,9 @@ primary_region = "sjc"
   BM25_CUTOFF               = "0.45"
   CE_CUTOFF                 = "2.0"
   SENTENCE_TRANSFORMERS_HOME = "/data/model_cache"
+  AUTO_LABEL_SCOPE          = "followers"     # follower-jetstream.ts, not the full stream
+  CROSSNOTE_DRY_RUN         = "1"             # log matches only; "0" labels and replies
+  LIBRARY_ROOT              = "/data/library" # snapshot named in /data/library/CURRENT
 
 [mounts]
   source      = "crossnote_data"

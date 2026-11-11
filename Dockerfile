@@ -10,8 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Python deps — install CPU-only torch first to avoid the 2GB CUDA build
-RUN pip3 install torch --index-url https://download.pytorch.org/whl/cpu --break-system-packages
+# Python deps (the CrossNote matcher needs no torch)
 COPY pipeline/requirements.txt ./pipeline/
 RUN pip3 install -r pipeline/requirements.txt --break-system-packages
 
