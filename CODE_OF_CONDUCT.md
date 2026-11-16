@@ -6,4 +6,10 @@ In short: be respectful, assume good faith, and keep discussion about the work. 
 
 ## Reporting
 
-Report conduct issues to **nishkaa@stanford.edu**. Reports are kept confidential. Maintainers will respond, and may warn, temporarily ban or permanently ban participants as described in the Covenant's enforcement guidelines.
+Report conduct issues to any of the maintainers (Department of Management Science and Engineering, Stanford University):
+
+- Nishka Arora, **nishkaa@stanford.edu**
+- Yann Issam Aouidef, **yaouidef@stanford.edu**
+- Ashish Goel, **ashishg@stanford.edu**
+
+Reports are kept confidential. Maintainers will respond, and may warn, temporarily ban or permanently ban participants as described in the Covenant's enforcement guidelines.

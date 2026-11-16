@@ -2,7 +2,7 @@
 
 CrossNote is a Bluesky labeler that brings X's Community Notes to Bluesky. When a Bluesky post makes a claim that a recent Community Note (rated Helpful on X) already corrects, CrossNote applies a `misinformation` label to the post and replies with the full note and a link to the X post it was written for.
 
-This repository contains the deployed system described in our paper, which is coming soon on arXiv.
+This repository contains the deployed system described in our paper, [*Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes*](paper/community-notes-across-platforms.pdf) (Nishka Arora, Yann Issam Aouidef and Ashish Goel, Stanford University).
 
 On Bluesky: [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.social)
 
@@ -43,7 +43,7 @@ flowchart LR
 
 On a match, CrossNote signs a `misinformation` label for the post and replies with "Community Note from X, rated Helpful:", the note and a link to the X post, split into a thread when it's longer than 300 characters.
 
-In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (embedding) of known positives, Stage 2 has a Recall@3 of 100% with 5,000 distractor notes, and the Stage 3 model has 96.0% precision and 64.7% recall.
+In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (embedding) of known positives, Stage 2 has a Recall@3 of 100% with 5,000 distractor notes, and the Stage 3 model has 96.0% precision and 64.7% recall on a balanced set of 300 post–note pairs. End to end, the pipeline's matches had 72.6% precision in a held-out evaluation on the live Bluesky stream, and it recovered 70.1% of known-positive posts.
 
 **Two modes.** `CROSSNOTE_MODE=followers` (the default) only watches posts by accounts that follow the labeler. `CROSSNOTE_MODE=full` watches every post on Bluesky and caps replies at `MAX_REPLIES_PER_HOUR` (default 20); matches over the cap are labelled but not replied to.
 
@@ -154,14 +154,15 @@ The [roadmap](ROADMAP.md) lists open problems. To talk about a collaboration, em
 
 ## Cite
 
-The paper is coming soon on arXiv, and we'll add its citation here. Until then, please cite this repository (see [CITATION.cff](CITATION.cff), or "Cite this repository" on GitHub):
+The paper is in [`paper/community-notes-across-platforms.pdf`](paper/community-notes-across-platforms.pdf) and will be posted on arXiv. Please cite it as (see also [CITATION.cff](CITATION.cff), or "Cite this repository" on GitHub):
 
 ```bibtex
-@software{crossnote,
-  author = {Arora, Nishka},
-  title  = {CrossNote},
+@misc{arora2026crossnote,
+  author = {Arora, Nishka and Aouidef, Yann Issam and Goel, Ashish},
+  title  = {Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes},
   year   = {2026},
-  url    = {https://github.com/NishkaArora/CrossNote}
+  note   = {Preprint},
+  url    = {https://github.com/NishkaArora/CrossNote/blob/main/paper/community-notes-across-platforms.pdf}
 }
 ```
 

@@ -137,7 +137,7 @@ const CONFIG = {
   API_BASE: 'https://crossnote-labeler.fly.dev',
   LABELER_HANDLE: 'crossnote.bsky.social',
   REPO_URL: 'https://github.com/NishkaArora/CrossNote',
-  PAPER_URL: '',  // add when the paper is on arXiv
+  PAPER_URL: 'https://github.com/NishkaArora/CrossNote/blob/main/paper/community-notes-across-platforms.pdf',  // switch to arXiv once posted
   // Stage 1 settings shown on the front page (configs/thresholds.yaml). Post
   // pages use the values the server returns for that match.
   TFIDF_THRESHOLD: 0.1375895433401011,
@@ -335,7 +335,7 @@ const CONFIG = {
         h('li', null, h('b', null, 'Meaning. '), `Its highest embedding similarity (text-embedding-3-large) to any note must be at least ${CONFIG.EMBEDDING_THRESHOLD.toFixed(3)}.`),
         h('li', null, h('b', null, `Top ${CONFIG.TOP_K}. `), `The ${CONFIG.TOP_K} most similar notes go to a language model, which judges whether each note applies to the post (`, ext(`${CONFIG.REPO_URL}/blob/main/prompts/applicability.txt`, 'prompt'), ').'),
         h('li', null, h('b', null, 'Label and reply. '), 'The highest-ranked note the model accepts is attached as a misinformation label, and the bot replies with the full note and a link to the X post.')),
-      h('p', { class: 'meta' }, 'In the paper’s evaluation, the final check was correct 96% of the time when it said a note applied. It still makes mistakes, which is why each result page asks whether the match is right.'));
+      h('p', { class: 'meta' }, 'In the paper’s test on the live Bluesky stream, annotators judged 72.6% of the pipeline’s matches correct. Some matches are wrong, which is why each result page asks whether the match is right.'));
   }
 
   function privacyCard() {

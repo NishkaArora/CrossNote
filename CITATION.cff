@@ -1,10 +1,20 @@
 cff-version: 1.2.0
-message: "If you use CrossNote, please cite it as below. The paper is coming soon on arXiv."
+message: "If you use CrossNote, please cite the paper below."
 title: "CrossNote"
 type: software
 authors:
   - family-names: Arora
     given-names: Nishka
+    email: nishkaa@stanford.edu
+    affiliation: "Department of Management Science and Engineering, Stanford University"
+  - family-names: Aouidef
+    given-names: Yann Issam
+    email: yaouidef@stanford.edu
+    affiliation: "Department of Management Science and Engineering, Stanford University"
+  - family-names: Goel
+    given-names: Ashish
+    email: ashishg@stanford.edu
+    affiliation: "Department of Management Science and Engineering, Stanford University"
 repository-code: "https://github.com/NishkaArora/CrossNote"
 license: MIT
 keywords:
@@ -13,3 +23,19 @@ keywords:
   - community-notes
   - misinformation
   - labeler
+preferred-citation:
+  type: article
+  status: preprint
+  title: "Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes"
+  authors:
+    - family-names: Arora
+      given-names: Nishka
+      affiliation: "Department of Management Science and Engineering, Stanford University"
+    - family-names: Aouidef
+      given-names: Yann Issam
+      affiliation: "Department of Management Science and Engineering, Stanford University"
+    - family-names: Goel
+      given-names: Ashish
+      affiliation: "Department of Management Science and Engineering, Stanford University"
+  year: 2026
+  url: "https://github.com/NishkaArora/CrossNote/blob/main/paper/community-notes-across-platforms.pdf"
