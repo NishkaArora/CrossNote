@@ -8,7 +8,7 @@ primary_region = "sjc"
   DATABASE_URL      = "file:/data/labeler.db"
   LIBRARY_ROOT      = "/data/library"   # snapshot named in /data/library/CURRENT
   CROSSNOTE_DRY_RUN = "0"               # "0" labels and replies; "1" logs matches only
-  DEMO_ORIGINS      = "https://nishkaarora.github.io"  # demo page origin(s) allowed to POST /demo/feedback
+  DEMO_ORIGINS      = "https://crossnote-bsky.github.io"  # demo page origin(s) allowed to POST /demo/feedback
   # CROSSNOTE_MODE is not set here on purpose. It defaults to "followers";
   # switch with `fly secrets set CROSSNOTE_MODE=full` and back with
   # `fly secrets unset CROSSNOTE_MODE`. Full mode caps replies at
