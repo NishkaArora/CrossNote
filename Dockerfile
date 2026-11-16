@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Python deps (the CrossNote matcher needs no torch)
+# Python deps (the crossnote matcher needs no torch)
 COPY pipeline/requirements.txt ./pipeline/
 RUN pip3 install -r pipeline/requirements.txt --break-system-packages
 

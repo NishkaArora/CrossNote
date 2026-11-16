@@ -6,8 +6,8 @@ Please report security issues privately through GitHub: **Security → Report a 
 
 We especially want to hear about anything that could:
 
-- let someone emit or remove labels as CrossNote (the label signing key, the `/admin/label` endpoint, the label stream);
-- let someone post as the CrossNote account;
+- let someone emit or remove labels as crossnote (the label signing key, the `/admin/label` endpoint, the label stream);
+- let someone post as the crossnote account;
 - expose API keys or the Fly deployment;
 - make the matcher follow instructions embedded in posts or notes (prompt injection) so that it labels posts it shouldn't.
 

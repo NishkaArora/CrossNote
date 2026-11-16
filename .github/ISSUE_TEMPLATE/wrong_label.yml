@@ -1,5 +1,5 @@
 name: Wrong label on a post
-description: CrossNote labelled or replied to a post and the note doesn't apply.
+description: crossnote labelled or replied to a post and the note doesn't apply.
 title: "Wrong label: "
 labels: ["wrong-label"]
 body:
@@ -22,4 +22,4 @@ body:
     attributes:
       label: Exclusion
       options:
-        - label: Please also exclude my account from CrossNote.
+        - label: Please also exclude my account from crossnote.

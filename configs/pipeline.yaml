@@ -1,4 +1,4 @@
-# Settings for the deployed CrossNote pipeline (library build + live matching).
+# Settings for the deployed crossnote pipeline (library build + live matching).
 #
 # thresholds.yaml, models.yaml and ../prompts/ record what the paper
 # evaluated. This file records where the deployment differs (models) and the
