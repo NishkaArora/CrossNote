@@ -15,7 +15,7 @@ authors:
     given-names: Ashish
     email: ashishg@stanford.edu
     affiliation: "Department of Management Science and Engineering, Stanford University"
-repository-code: "https://github.com/NishkaArora/crossnote_bsky"
+repository-code: "https://github.com/crossnote-bsky/crossnote_bsky"
 license: MIT
 keywords:
   - bluesky
@@ -38,4 +38,4 @@ preferred-citation:
       given-names: Ashish
       affiliation: "Department of Management Science and Engineering, Stanford University"
   year: 2026
-  url: "https://github.com/NishkaArora/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf"
+  url: "https://github.com/crossnote-bsky/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf"

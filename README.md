@@ -6,7 +6,7 @@ Paper: [*Community Notes Across Platforms: Evaluating the Feasibility of Re-usin
 
 - **See labels:** subscribe to [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.social).
 - **Have your posts checked:** follow the account.
-- **See why a post was labeled:** paste its link into the [demo](https://nishkaarora.github.io/crossnote_bsky/).
+- **See why a post was labeled:** paste its link into the [demo](https://crossnote-bsky.github.io/crossnote_bsky/).
 - **Wrong label?** [Report it](../../issues/new?template=wrong_label.yml).
 
 ## How it works
@@ -40,7 +40,7 @@ We're looking for collaborators in research, engineering and evaluation. See the
   title  = {Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes},
   year   = {2026},
   note   = {Preprint},
-  url    = {https://github.com/NishkaArora/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf}
+  url    = {https://github.com/crossnote-bsky/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf}
 }
 ```
 
