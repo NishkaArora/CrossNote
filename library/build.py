@@ -28,7 +28,7 @@ text and skips steps 4-6 (the filters need the post text). A stub build is writt
 its manifest, and the live matcher refuses to load it.
 
 LLM labels, X posts and embeddings are cached in data/library/_cache, so a
-daily rebuild only pays for notes that are new to the window.
+rebuild only pays (X API, OpenAI) for notes that are new since the last one.
 
 Usage (from the repo root):
     python data/download_notes.py                     # writes data/raw/<export-date>/

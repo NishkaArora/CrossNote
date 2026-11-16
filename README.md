@@ -18,7 +18,7 @@ On Bluesky: [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.soc
 
 ```mermaid
 flowchart LR
-  A[Community Notes export] --> B[Library build<br/>daily]
+  A[Community Notes export] --> B[Library build<br/>periodic]
   B --> C[(Note library<br/>notes, embeddings, TF-IDF)]
   D[Bluesky Jetstream] --> E[Post filters]
   E --> F[TF-IDF gate]
@@ -29,7 +29,7 @@ flowchart LR
   I -->|applicable| J[Label + reply]
 ```
 
-**Note library** (`library/build.py`, rebuilt daily). Starting from X's public Community Notes export, a note enters the library if it is rated Helpful now and was first rated Helpful in the 7 days before the export. For each note, the original X post is fetched through the X API and kept only if it is in English. Two LLM filters (`prompts/author_dependence.txt`, `prompts/media_dependence.txt`) drop notes that only make sense for a particular author or a particular image or video. Each remaining note is indexed as "X post text + note text" with text-embedding-3-large and a unigram TF-IDF vectorizer.
+**Note library** (`library/build.py`, rebuilt periodically; each rebuild fetches the new notes' X posts through the paid X API). Starting from X's public Community Notes export, a note enters the library if it is rated Helpful now and was first rated Helpful in the 7 days before the export. For each note, the original X post is fetched through the X API and kept only if it is in English. Two LLM filters (`prompts/author_dependence.txt`, `prompts/media_dependence.txt`) drop notes that only make sense for a particular author or a particular image or video. Each remaining note is indexed as "X post text + note text" with text-embedding-3-large and a unigram TF-IDF vectorizer.
 
 **Live matching** (`src/stream.ts`, `pipeline/crossnote_match.py`). Each new Bluesky post goes through:
 
@@ -59,7 +59,7 @@ In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (e
 |---|---|---|
 | LLM for Stage 3 and the library filters | `gpt-5.6-sol` (Stage 3), `gpt-5.6` (filters) | `gpt-6.1-sol` for both |
 | Model versions | bare OpenAI aliases at the dates in `configs/models.yaml` | bare aliases, not pinned; the underlying model can change |
-| Note library | fixed evaluation set | rolling 7-day window, rebuilt daily |
+| Note library | fixed evaluation set | 7-day window of notes before each build's export date; rebuilt periodically, not daily |
 
 Thresholds, prompts and the Stage 2 cutoff are the ones the paper evaluated (`configs/thresholds.yaml`, `prompts/`). Deployment-only settings are in `configs/pipeline.yaml`. Because the LLM differs, live precision and recall may differ from the paper's numbers.
 
