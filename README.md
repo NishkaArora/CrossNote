@@ -2,7 +2,7 @@
 
 crossnote is a Bluesky labeler that brings X's Community Notes to Bluesky. When a Bluesky post makes a claim that a Helpful Community Note already corrects, crossnote labels the post `misinformation` and replies with the note.
 
-Paper: [*Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes*](paper/community-notes-across-platforms.pdf), Nishka Arora, Yann Issam Aouidef and Ashish Goel, Stanford University.
+Paper: [*Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes*](paper/community-notes-across-platforms.pdf), Nishka Arora, Yann Issam Aouidef and Ashish Goel, Stanford University. [Slides](paper/crossnote-slides.pdf).
 
 - **See labels:** subscribe to [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.social).
 - **Have your posts checked:** follow the account.
