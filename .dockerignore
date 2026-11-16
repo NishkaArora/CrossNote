@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.db
+.git
+data/
+.venv/
+local-data/

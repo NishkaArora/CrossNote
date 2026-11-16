@@ -1,0 +1,25 @@
+name: Wrong label on a post
+description: CrossNote labelled or replied to a post and the note doesn't apply.
+title: "Wrong label: "
+labels: ["wrong-label"]
+body:
+  - type: input
+    id: post
+    attributes:
+      label: Link to the Bluesky post
+      placeholder: https://bsky.app/profile/.../post/...
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why the note doesn't apply
+      description: What the post says and what the note corrects, in a sentence or two.
+    validations:
+      required: true
+  - type: checkboxes
+    id: exclude
+    attributes:
+      label: Exclusion
+      options:
+        - label: Please also exclude my account from CrossNote.

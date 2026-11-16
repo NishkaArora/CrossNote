@@ -1,0 +1,53 @@
+app            = "crossnote-labeler"
+primary_region = "sjc"
+
+[env]
+  PORT              = "8080"
+  NODE_ENV          = "production"
+  DATA_DIR          = "/data"
+  DATABASE_URL      = "file:/data/labeler.db"
+  LIBRARY_ROOT      = "/data/library"   # snapshot named in /data/library/CURRENT
+  CROSSNOTE_DRY_RUN = "0"               # "0" labels and replies; "1" logs matches only
+  # CROSSNOTE_MODE is not set here on purpose. It defaults to "followers";
+  # switch with `fly secrets set CROSSNOTE_MODE=full` and back with
+  # `fly secrets unset CROSSNOTE_MODE`. Full mode caps replies at
+  # MAX_REPLIES_PER_HOUR (default 20).
+
+[mounts]
+  source      = "crossnote_data"
+  destination = "/data"
+
+[[services]]
+  protocol      = "tcp"
+  internal_port = 8080
+
+  [[services.ports]]
+    port        = 80
+    handlers    = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
+    interval     = "30s"
+    timeout      = "10s"
+    grace_period = "360s"
+    method       = "GET"
+    path         = "/"
+
+[vm]
+  memory   = "4gb"
+  cpu_kind = "performance"
+  cpus     = 2
+
+# Secrets (fly secrets set KEY=value):
+#   LABELER_DID          required  DID of the labeller account
+#   LABELER_SIGNING_KEY  required  hex secp256k1 signing key for labels
+#   BSKY_HANDLE          required  handle of the account that posts replies
+#   BSKY_PASSWORD        required  app password for that account
+#   OPENAI_API_KEY       required  embeddings and Stage 3 applicability
+#   ADMIN_TOKEN          optional  enables /admin/label; use `openssl rand -hex 32`
+#   CROSSNOTE_MODE       optional  "followers" (default) or "full"
+#   EXCLUDED_DIDS        optional  comma-separated DIDs that asked to be excluded

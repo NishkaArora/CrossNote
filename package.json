@@ -1,0 +1,39 @@
+{
+  "name": "crossnote-labeler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bluesky labeler that applies X Community Notes to matching Bluesky posts",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NishkaArora/CrossNote.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@atproto/api": "^0.18.1",
+    "@atproto/crypto": "^0.4.4",
+    "@ipld/dag-cbor": "^9.2.5",
+    "@skyware/jetstream": "^0.2.5",
+    "better-sqlite3": "^12.4.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "undici": "^7.16.0",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "@types/ws": "^8.18.1"
+  }
+}

@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use CrossNote, please cite it as below. The paper is coming soon on arXiv."
+title: "CrossNote"
+type: software
+authors:
+  - family-names: Arora
+    given-names: Nishka
+repository-code: "https://github.com/NishkaArora/CrossNote"
+license: MIT
+keywords:
+  - bluesky
+  - atproto
+  - community-notes
+  - misinformation
+  - labeler

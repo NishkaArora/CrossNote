@@ -1,0 +1,19 @@
+node_modules/
+dist/
+.env
+*.db
+
+# Community Notes data (downloaded/computed locally, uploaded to Fly manually)
+data/raw/
+data/cleaned/
+data/library/
+
+# Local Python env for library/build.py
+.venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Local runs (see .env.example)
+local-data/

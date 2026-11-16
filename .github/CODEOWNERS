@@ -1,0 +1,6 @@
+# Changes here affect the live labeler and need a maintainer's review.
+/configs/    @NishkaArora
+/prompts/    @NishkaArora
+/pipeline/   @NishkaArora
+/fly.toml    @NishkaArora
+/.github/    @NishkaArora

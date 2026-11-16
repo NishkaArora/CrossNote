@@ -1,0 +1,22 @@
+name: Bug report
+description: Something in the code doesn't work as documented.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Remove API keys, tokens and post text before pasting.
+      render: text
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      placeholder: "local dry run / Fly; CROSSNOTE_MODE=...; commit ..."

@@ -1,0 +1,19 @@
+name: Idea or feature
+description: Suggest an improvement or a research direction.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What problem it solves and how you'd approach it.
+    validations:
+      required: true
+  - type: dropdown
+    id: live
+    attributes:
+      label: Would this change which posts get labelled?
+      options:
+        - "No"
+        - "Yes"
+        - Not sure
