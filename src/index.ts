@@ -50,7 +50,7 @@ const MODE = MODE_RAW as StreamMode;
 app.get("/", (_req, res) => res.send("crossnote labeler is running"));
 app.get("/stats", (_req, res) => res.json(streamStats));
 
-// API for the demo page in demo/ (GitHub Pages). See src/demo-api.ts.
+// API for the demo page (crossnote-bsky/inspect_and_give_feedback). See src/demo-api.ts.
 app.use("/demo", demoRouter);
 
 // Constant-time comparison of SHA-256 digests (equal length by construction).

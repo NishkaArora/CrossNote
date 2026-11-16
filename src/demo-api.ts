@@ -1,4 +1,4 @@
-// Read-only API for the demo page (demo/, hosted on GitHub Pages).
+// API for the demo page (crossnote-bsky/inspect_and_give_feedback, on GitHub Pages).
 //
 //   GET  /demo/match?uri=at://...   why one labelled post was matched
 //   GET  /demo/summary              aggregate numbers for the front page
