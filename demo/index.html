@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<!-- Always light: no dark theme, and ask browsers and Dark Reader not to darken the page. -->
+<meta name="color-scheme" content="only light">
+<meta name="darkreader-lock">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" href="data:,">
 <title>crossnote explorer</title>
@@ -11,7 +14,7 @@
   /* Palette from the crossnote slides: white, #1675EB, and its tints #F4FAFF / #E7F5FF / #D3EAF8.
      --link is a slightly deeper #1675EB so small blue text and the button label meet WCAG AA. */
   :root {
-    color-scheme: light;
+    color-scheme: only light;
     --bg: #ffffff;
     --surface: #f4faff;
     --raised: #ffffff;
@@ -118,6 +121,12 @@
   .cand .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .cand .excerpt { margin: 6px 0 4px; overflow-wrap: anywhere; }
   .cand .why { font-size: 14px; color: var(--ink-2); margin: 0; }
+  .rerun-text { min-height: 96px; }
+  .rerun-out:not(:empty) { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .rerun-title { font-size: 15px; margin: 0 0 10px; }
+  .outcome { font-weight: 600; margin: 0 0 12px; padding: 8px 12px; border-radius: 8px; }
+  .outcome.ok { background: var(--ok-bg); color: var(--ok); }
+  .outcome.no { background: var(--no-bg); color: var(--no); }
   .choices { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
   ol.how { margin: 0; padding-left: 22px; }
   ol.how li { margin: 0 0 8px; }
@@ -363,7 +372,7 @@ const CONFIG = {
     // Example mode shows made-up text instead of embedding posts that don't exist.
     const exampleBox = (text) => h('div', { class: 'cand' }, h('p', { class: 'excerpt' }, text));
     const bq = EXAMPLE ? exampleBox(d.example_post_text || '')
-      : h('blockquote', { class: 'bluesky-embed', 'data-bluesky-uri': d.uri },
+      : h('blockquote', { class: 'bluesky-embed', 'data-bluesky-uri': d.uri, 'data-bluesky-embed-color-mode': 'light' },
           h('p', null, ext(bskyUrl(d.did, d.rkey), 'View this post on Bluesky')));
     const xBox = h('div', { id: 'x-embed', class: 'embed-box' },
       EXAMPLE ? exampleBox(d.example_x_post_text || '')
@@ -389,54 +398,46 @@ const CONFIG = {
         replyUrl ? [' · ', ext(replyUrl, 'crossnote’s reply on Bluesky')] : null));
   }
 
-  // X side only: crossnote checks posts as they arrive (no backfill), so its own wait is always about a minute.
-  function timingCard(d, c) {
-    const n = (c && c.note) || {};
-    const xPost = toDate(n.x_post_created_at), noteWritten = toDate(n.note_created_at), helpful = toDate(n.note_helpful_at);
-    const bskyPost = toDate(d.posted_at);
-    if (!xPost || !helpful) return null;
-
-    const events = [
-      { d: xPost, what: 'Post published', where: 'X', dot: 'var(--x)' },
-      { d: noteWritten, what: 'Community Note written', where: 'X', dot: 'var(--x)' },
-      { d: helpful, what: 'Note rated Helpful', where: 'X', dot: 'var(--x)' },
-      { d: bskyPost, what: 'Post published', where: 'Bluesky', dot: 'var(--bsky)' },
-    ].filter((e) => e.d).sort((a, b) => a.d - b.d);
-
-    return h('section', { class: 'card' },
-      h('h2', null, 'Time to a Helpful note on X'),
-      h('div', { class: 'tiles compact' },
-        tile('X post → Helpful note', fmtDur(Math.max(0, helpful - xPost)))),
-      h('ul', { class: 'timeline', 'aria-label': 'Timeline' },
-        events.map((e, i) => h('li', { style: `--dot:${e.dot}` },
-          h('div', { class: 'what' }, e.what, h('span', { class: 'where' }, ` · ${e.where}`)),
-          h('div', { class: 'when' }, fmtTime(e.d),
-            i > 0 ? h('span', { class: 'gap' }, ` · ${fmtDur(Math.max(0, e.d - events[i - 1].d))} later`) : null)))));
-  }
-
-  function pipelineCard(d) {
+  // Steps of the pipeline for one run. `d.stage` is where the run stopped:
+  // length, tfidf, embedding or stage3 (labelled matches always reached stage3).
+  function pipelineSteps(d, isEdit) {
+    const stage = d.stage || 'stage3';
+    const order = ['length', 'tfidf', 'embedding', 'stage3'];
+    const reached = order.indexOf(stage);
+    const status = (i) => (i < reached || (i === 3 && reached === 3)
+      ? h('span', { class: 'pill ok' }, '✓ Passed')
+      : i === reached ? h('span', { class: 'pill no' }, '✕ Stopped here')
+      : h('span', { class: 'pill neutral' }, 'Not reached'));
     const t = d.thresholds || {};
     const cands = Array.isArray(d.candidates) ? d.candidates : [];
     const libNotes = d.library && d.library.notes;
     const libText = libNotes ? `any of the ${libNotes.toLocaleString()} notes in the library` : 'any note in the library';
-    return h('section', { class: 'card' },
-      h('h2', null, 'What the pipeline did'),
+    const chosen = cands.find((x) => String(x.note_id) === String(d.chosen_note_id));
+
+    let outcome = null;
+    if (isEdit) {
+      outcome = chosen
+        ? h('p', { class: 'outcome ok' }, `✓ This version would be labeled, using note #${chosen.rank}.`)
+        : h('p', { class: 'outcome no' }, '✕ This version wouldn’t be labeled.');
+    }
+    return [
+      outcome,
       h('div', { class: 'step' },
-        h('h3', null, h('span', { class: 'n' }, '1'), 'Post filters', h('span', { class: 'pill ok' }, '✓ Passed')),
-        h('p', null, 'An original or quote post, in English or with no language tag, longer than two words.')),
+        h('h3', null, h('span', { class: 'n' }, '1'), 'Post filters', status(0)),
+        h('p', null, isEdit ? 'Longer than two words.' : 'An original or quote post, in English or with no language tag, longer than two words.')),
       h('div', { class: 'step' },
-        h('h3', null, h('span', { class: 'n' }, '2'), 'Word overlap (TF-IDF)', h('span', { class: 'pill ok' }, '✓ Passed')),
+        h('h3', null, h('span', { class: 'n' }, '2'), 'Word overlap (TF-IDF)', status(1)),
         h('p', null, `How many of the same words the post shares with ${libText}, weighted by how rare the words are.`),
-        meter('Highest TF-IDF similarity', d.scores && d.scores.tfidf_max, t.tfidf ?? CONFIG.TFIDF_THRESHOLD)),
+        reached >= 1 ? meter('Highest TF-IDF similarity', d.scores && d.scores.tfidf_max, t.tfidf ?? CONFIG.TFIDF_THRESHOLD) : null),
       h('div', { class: 'step' },
-        h('h3', null, h('span', { class: 'n' }, '3'), 'Meaning (embeddings)', h('span', { class: 'pill ok' }, '✓ Passed')),
+        h('h3', null, h('span', { class: 'n' }, '3'), 'Meaning (embeddings)', status(2)),
         h('p', null, `How close the post is in meaning to ${libText}, using text-embedding-3-large.`),
-        meter('Highest embedding similarity', d.scores && d.scores.cosine_max, t.embedding ?? CONFIG.EMBEDDING_THRESHOLD)),
+        reached >= 2 ? meter('Highest embedding similarity', d.scores && d.scores.cosine_max, t.embedding ?? CONFIG.EMBEDDING_THRESHOLD) : null),
       h('div', { class: 'step' },
-        h('h3', null, h('span', { class: 'n' }, '4'), `Top ${cands.length || t.top_k || CONFIG.TOP_K} notes and the model’s check`),
-        h('p', null, 'The most similar notes, in order, each judged by a language model: does this note apply to this post? The highest-ranked note it accepts is the one crossnote used.'),
+        h('h3', null, h('span', { class: 'n' }, '4'), `Top ${cands.length || t.top_k || CONFIG.TOP_K} notes and the model’s check`, reached === 3 ? null : status(3)),
+        h('p', null, 'The most similar notes, in order, each judged by a language model: does this note apply to this post? The highest-ranked note it accepts is the one crossnote uses.'),
         cands.map((x) => {
-          const isChosen = String(x.note_id) === String(d.chosen_note_id);
+          const isChosen = chosen && String(x.note_id) === String(chosen.note_id);
           const text = x.note ? decodeEntities(x.note.text) : '';
           return h('div', { class: 'cand' + (isChosen ? ' chosen' : '') },
             h('div', { class: 'top' },
@@ -449,7 +450,77 @@ const CONFIG = {
             x.reason ? h('p', { class: 'why' }, h('b', null, 'Model’s reason: '), x.reason) : null,
             h('p', { class: 'meta' }, ext(noteUrl(x.note_id), 'Note on X')));
         })),
+    ];
+  }
+
+  function pipelineCard(d) {
+    return h('section', { class: 'card' },
+      h('h2', null, 'What the pipeline did'),
+      pipelineSteps(d, false),
       d.library && d.library.name ? h('p', { class: 'meta' }, `Library snapshot ${d.library.name}${d.library.export_date ? `, from the Community Notes export of ${d.library.export_date}` : ''}.`) : null);
+  }
+
+  // Edit the post and run the pipeline again on the edited text (POST /demo/rerun).
+  // Nothing is stored or labeled; the text goes to OpenAI for the embedding and model steps.
+  function rerunCard(d) {
+    const box = h('textarea', { id: 'rerun-text', class: 'rerun-text', maxlength: '1000', rows: '4',
+      placeholder: 'Loading the post’s text…', disabled: true });
+    const run = h('button', { class: 'btn primary', type: 'submit', disabled: true }, 'Run the pipeline');
+    let original = '';
+    const reset = h('button', { class: 'btn', type: 'button', disabled: true, onclick: () => { box.value = original; } }, 'Reset');
+    const status = h('p', { class: 'meta', role: 'status', 'aria-live': 'polite' });
+    const out = h('div', { class: 'rerun-out' });
+
+    const ready = (text) => {
+      original = text;
+      box.value = text; box.disabled = false; box.placeholder = 'Type a version of the post…';
+      run.disabled = false; reset.disabled = false;
+    };
+    if (EXAMPLE) {
+      ready(d.example_post_text || '');
+    } else {
+      const u = new URL('https://public.api.bsky.app/xrpc/app.bsky.feed.getPosts');
+      u.searchParams.set('uris', d.uri);
+      getJson(u).then(({ ok, body }) => {
+        const post = ok && body && body.posts && body.posts[0];
+        ready((post && post.record && post.record.text) || '');
+      }).catch(() => ready(''));
+    }
+
+    const form = h('form', {
+      onsubmit: async (e) => {
+        e.preventDefault();
+        const text = box.value.trim();
+        if (!text) { status.textContent = 'Type a version of the post first.'; return; }
+        if (EXAMPLE) { status.textContent = 'Trying edits works on real posts only, not on the example.'; return; }
+        run.disabled = true; out.replaceChildren();
+        status.textContent = 'Running the pipeline… this can take up to 30 seconds.';
+        try {
+          const r = await fetch(`${CONFIG.API_BASE}/demo/rerun`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uri: d.uri, text }),
+          });
+          const body = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(body.message || `HTTP ${r.status}`);
+          status.textContent = '';
+          out.replaceChildren(h('div', null, h('h3', { class: 'rerun-title' }, 'What the pipeline does with your version'),
+            pipelineSteps({ ...body, library: d.library && d.library.name === body.library ? d.library : { name: body.library } }, true)));
+        } catch (err) {
+          status.textContent = `Couldn’t run the pipeline: ${err.message}`;
+        } finally {
+          run.disabled = false;
+        }
+      },
+    },
+      h('label', { class: 'sr-only', for: 'rerun-text' }, 'Edited post text'),
+      box,
+      h('div', { class: 'choices' }, run, reset));
+
+    return h('section', { class: 'card' },
+      h('h2', null, 'Try a different version'),
+      h('p', null, 'Edit the post and see what the pipeline would have done.'),
+      form, status, out,
+      h('p', { class: 'meta' }, 'Your text is sent to OpenAI to run the pipeline. It isn’t stored, and nothing is labeled. Up to 5 tries an hour.'));
   }
 
   function feedbackCard(d) {
@@ -516,8 +587,8 @@ const CONFIG = {
         ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), '.'),
       sameClaimCard(d, c),
       noteCard(d, c),
-      timingCard(d, c),
       pipelineCard(d),
+      rerunCard(d),
       feedbackCard(d),
       footer(h('a', { href: './' }, 'Look up another post')));
     embedBluesky();
@@ -552,7 +623,7 @@ const CONFIG = {
     try {
       await loadScript('https://platform.twitter.com/widgets.js');
       const box = document.getElementById('x-embed');
-      const el = await window.twttr.widgets.createTweet(String(id), box, { conversation: 'none', dnt: true });
+      const el = await window.twttr.widgets.createTweet(String(id), box, { conversation: 'none', dnt: true, theme: 'light' });
       const fb = box.querySelector('.fallback');
       if (el && fb) fb.remove();
     } catch { /* the link stays */ }

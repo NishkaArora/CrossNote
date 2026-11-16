@@ -22,7 +22,9 @@ import json
 import os
 import pickle
 import threading
+import re
 import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +38,7 @@ LIBRARY_ROOT = Path(os.environ.get("LIBRARY_ROOT", "/data/library"))
 LIBRARY_CHECK_SECONDS = int(os.environ.get("LIBRARY_CHECK_SECONDS", "300"))
 STAGE3_LOG_PATH = os.environ.get("STAGE3_LOG_PATH", "/data/crossnote_stage3.jsonl")
 ALLOW_STUB = os.environ.get("CROSSNOTE_ALLOW_STUB_LIBRARY") == "1"
+SNAPSHOT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 STAGE3_RESPONSE_SCHEMA = {
     "type": "json_schema",
@@ -101,6 +104,7 @@ class Matcher:
         self._last_check = 0.0
         self._lock = threading.Lock()
         self._log_lock = threading.Lock()
+        self._snapshots: dict[str, Library] = {}  # older snapshots loaded for rerun()
         self._pool = ThreadPoolExecutor(max_workers=self.cfg["stage2"]["top_k"] * 4)
         self.stats = {"received": 0, "length_dropped": 0, "passed_tfidf": 0, "passed_embedding": 0,
                       "stage3_calls": 0, "stage3_errors": 0, "matched": 0, "errors": 0}
@@ -158,16 +162,16 @@ class Matcher:
                 else:
                     raise
 
-    def _judge(self, post_text, row, rank, cosine, tfidf):
+    def _judge(self, stats, post_text, row, rank, cosine, tfidf):
         judgment = {"rank": rank, "note_id": row["noteId"], "tweet_id": row["tweetId"],
                     "cosine": cosine, "tfidf": tfidf, "applicable": False, "reason": None, "error": None}
-        self.stats["stage3_calls"] += 1
+        stats["stage3_calls"] += 1
         try:
             out = self.call_stage3_model(post_text, row["summary"], row["x_post_text"])
             judgment["applicable"] = out["applicable"] is True
             judgment["reason"] = out["reason"]
         except Exception as e:
-            self.stats["stage3_errors"] += 1
+            stats["stage3_errors"] += 1
             judgment["error"] = f"{type(e).__name__}: {e}"[:300]
         return judgment
 
@@ -177,15 +181,20 @@ class Matcher:
         self.maybe_reload()
         lib = self.library
         self.stats["received"] += 1
-        result = {"stage": None, "match": None, "library": lib.name if lib else None}
         if lib is None or self.client is None:
-            result["stage"] = "not_ready"
-            result["error"] = self.library_error or "OPENAI_API_KEY not set"
-            return result
+            return {"stage": "not_ready", "match": None, "library": lib.name if lib else None,
+                    "error": self.library_error or "OPENAI_API_KEY not set"}
+        result = self._run(text, lib, self.stats)
+        if result["stage"] == "stage3":
+            self._log_stage3(result)
+        return result
 
+    def _run(self, text: str, lib: Library, stats) -> dict:
+        """Stages 1-3 for one post against `lib`, counting into `stats`."""
+        result = {"stage": None, "match": None, "library": lib.name}
         s1 = self.cfg["stage1"]
         if len(text.split()) <= s1["min_words_exclusive"]:
-            self.stats["length_dropped"] += 1
+            stats["length_dropped"] += 1
             result["stage"] = "length"
             return result
 
@@ -194,7 +203,7 @@ class Matcher:
         if result["tfidf_max"] < s1["tfidf_threshold"]:
             result["stage"] = "tfidf"
             return result
-        self.stats["passed_tfidf"] += 1
+        stats["passed_tfidf"] += 1
 
         ecfg = self.cfg["models"]["embedding"]
         query = embed_openai(self.client, [text], ecfg["model"], max_retries=ecfg["max_attempts"])
@@ -203,10 +212,10 @@ class Matcher:
         if result["cosine_max"] < s1["embedding_threshold"]:
             result["stage"] = "embedding"
             return result
-        self.stats["passed_embedding"] += 1
+        stats["passed_embedding"] += 1
 
         top = np.argsort(-cosine, kind="stable")[: self.cfg["stage2"]["top_k"]]
-        futures = [self._pool.submit(self._judge, text, lib.notes.iloc[i], rank, float(cosine[i]), float(tfidf[i]))
+        futures = [self._pool.submit(self._judge, stats, text, lib.notes.iloc[i], rank, float(cosine[i]), float(tfidf[i]))
                    for rank, i in enumerate(top, 1)]
         judgments = [f.result() for f in futures]  # rank order = cosine order
         result["stage"] = "stage3"
@@ -214,7 +223,7 @@ class Matcher:
 
         best = next((j for j in judgments if j["applicable"]), None)
         if best:
-            self.stats["matched"] += 1
+            stats["matched"] += 1
             row = lib.notes.iloc[top[best["rank"] - 1]]
             result["match"] = {
                 **best,
@@ -222,8 +231,41 @@ class Matcher:
                 "reply_note_text": html.unescape(row["summary"]),
                 "x_post_text": row["x_post_text"],
             }
-        self._log_stage3(result)
         return result
+
+    # ── demo page: what-if runs ──────────────────────────────────────────────
+
+    def rerun(self, text: str, library_name: str | None = None) -> dict:
+        """Run the stages on edited text for the demo page. Nothing is counted,
+        logged or labelled, and no X post text is returned. Uses the snapshot
+        the original match was made against when it is still on disk."""
+        self.maybe_reload()
+        lib = self._snapshot(library_name)
+        if lib is None or self.client is None:
+            return {"stage": "not_ready", "library": lib.name if lib else None}
+        result = self._run(text, lib, defaultdict(int))
+        notes = lib.notes.set_index("noteId", drop=False)
+        for c in result.get("candidates") or []:
+            c["note_text"] = notes.loc[c["note_id"], "summary"] if c["note_id"] in notes.index else None
+        result["match"] = result["match"]["note_id"] if result["match"] else None
+        return result
+
+    def _snapshot(self, name: str | None) -> Library | None:
+        current = self.library
+        if not name or (current is not None and name == current.name):
+            return current
+        if not SNAPSHOT_NAME.match(name) or ".." in name:
+            return current
+        with self._lock:
+            if name not in self._snapshots:
+                try:
+                    lib = Library(LIBRARY_ROOT / name)
+                except Exception:
+                    return current
+                if len(self._snapshots) >= 2:
+                    self._snapshots.pop(next(iter(self._snapshots)))
+                self._snapshots[name] = lib
+            return self._snapshots[name]
 
     # Scores only: no post text, URI or model reasoning, so posts that did not
     # match can't be traced back to an account. Matched posts are logged

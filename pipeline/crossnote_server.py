@@ -129,3 +129,23 @@ def demo_notes(req: DemoNotesRequest) -> dict:
                        "top_k": matcher.cfg["stage2"]["top_k"] if matcher else None},
         "notes": out,
     }
+
+
+class DemoRerunRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=3000)
+    library: str | None = None
+
+
+@app.post("/demo/rerun")
+def demo_rerun(req: DemoRerunRequest) -> dict:
+    """What-if run for the demo page: the edited post through Stages 1-3 with
+    nothing counted, logged or labelled (see Matcher.rerun)."""
+    try:
+        result = matcher.rerun(req.text, req.library)
+    except Exception as e:
+        print(f"[matcher] demo rerun error: {type(e).__name__}: {e}", flush=True)
+        raise HTTPException(502, "rerun failed")
+    s1 = matcher.cfg["stage1"]
+    result["thresholds"] = {"min_words_exclusive": s1["min_words_exclusive"], "tfidf": s1["tfidf_threshold"],
+                            "embedding": s1["embedding_threshold"], "top_k": matcher.cfg["stage2"]["top_k"]}
+    return result
