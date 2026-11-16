@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="icon" href="data:,">
+<title>CrossNote Explorer</title>
+<style>
+  :root {
+    --bg: #f6f6f3;
+    --surface: #ffffff;
+    --ink: #1b1b1b;
+    --ink-2: #3d3d3d;
+    --muted: #686868;
+    --line: #e3e3de;
+    --accent: #1d5fd8;
+    --accent-ink: #ffffff;
+    --accent-track: #dbe6fb;
+    --tick: #1b1b1b;
+    --ok: #17703a;
+    --ok-bg: #e5f3ea;
+    --no: #a8261c;
+    --no-bg: #fbe9e7;
+    --neutral-bg: #ececea;
+    --warn-bg: #fff6e3;
+    --warn-line: #efd398;
+    --chosen: #eef3fe;
+    --chosen-line: #c9d8fb;
+    --x: #1b1b1b;
+    --bsky: #1d5fd8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131414; --surface: #1d1e1f; --ink: #ececea; --ink-2: #cfcfcc; --muted: #a2a29e;
+      --line: #34353a; --accent: #7aa5ff; --accent-ink: #0d1526; --accent-track: #233559; --tick: #ececea;
+      --ok: #74d394; --ok-bg: #173323; --no: #ff9387; --no-bg: #3a1e1b; --neutral-bg: #2a2b2d;
+      --warn-bg: #33291a; --warn-line: #6a5426; --chosen: #1a2540; --chosen-line: #2f4677;
+      --x: #ececea; --bsky: #7aa5ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131414; --surface: #1d1e1f; --ink: #ececea; --ink-2: #cfcfcc; --muted: #a2a29e;
+    --line: #34353a; --accent: #7aa5ff; --accent-ink: #0d1526; --accent-track: #233559; --tick: #ececea;
+    --ok: #74d394; --ok-bg: #173323; --no: #ff9387; --no-bg: #3a1e1b; --neutral-bg: #2a2b2d;
+    --warn-bg: #33291a; --warn-line: #6a5426; --chosen: #1a2540; --chosen-line: #2f4677;
+    --x: #ececea; --bsky: #7aa5ff;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); }
+  main { max-width: 960px; margin: 0 auto; padding: 28px 16px 64px; }
+  header { margin-bottom: 8px; }
+  .brand { font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+  header h1 { font-size: 26px; line-height: 1.25; margin: 4px 0 6px; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 680px; }
+  .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 10px 14px; margin: 18px 0; font-size: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .card > h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  .pair h3 { font-size: 14px; margin: 0 0 8px; }
+  .embed-box { min-height: 80px; overflow-wrap: anywhere; }
+  blockquote.bluesky-embed { margin: 0; }
+  .note-text { font-size: 17px; line-height: 1.5; white-space: pre-wrap; margin: 0 0 10px; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.no { background: var(--no-bg); color: var(--no); }
+  .pill.neutral { background: var(--neutral-bg); color: var(--ink-2); }
+  .pill.shown { background: var(--accent); color: var(--accent-ink); }
+  .btn { font: inherit; display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: var(--surface); cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn[aria-pressed="true"] { border-color: var(--accent); background: var(--chosen); font-weight: 600; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .lookup { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lookup input { flex: 1 1 280px; min-width: 0; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+  .lookup input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  textarea { width: 100%; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); resize: vertical; min-height: 70px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .tile { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .tile .label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .tile .value { font-size: 30px; font-weight: 600; line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .tile .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+  .timeline { list-style: none; margin: 14px 0 0; padding: 0; }
+  .timeline li { position: relative; padding: 0 0 14px 24px; }
+  .timeline li::before { content: ""; position: absolute; left: 3px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--dot, var(--accent)); box-shadow: 0 0 0 2px var(--surface); }
+  .timeline li::after { content: ""; position: absolute; left: 8px; top: 19px; bottom: 0; width: 1px; background: var(--line); }
+  .timeline li:last-child::after { display: none; }
+  .timeline .what { font-weight: 600; }
+  .timeline .where { color: var(--muted); font-weight: 400; }
+  .timeline .when { color: var(--muted); font-size: 13px; }
+  .timeline .gap { color: var(--ink-2); font-size: 13px; }
+  .summary { margin: 12px 0 0; }
+  .step { padding: 14px 0; border-top: 1px solid var(--line); }
+  .step:first-of-type { border-top: 0; padding-top: 0; }
+  .step h3 { font-size: 15px; margin: 0 0 6px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .step h3 .n { color: var(--muted); font-weight: 600; }
+  .step p { margin: 0 0 6px; }
+  .meter { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; margin: 8px 0 2px; max-width: 560px; }
+  .meter .bar { position: relative; height: 8px; border-radius: 999px; background: var(--accent-track); }
+  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); }
+  .meter .tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--tick); border-radius: 1px; }
+  .meter .fig { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; }
+  .meter .cap { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+  .cand { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; }
+  .cand.chosen { background: var(--chosen); border-color: var(--chosen-line); }
+  .cand .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cand .excerpt { margin: 6px 0 4px; overflow-wrap: anywhere; }
+  .cand .why { font-size: 14px; color: var(--ink-2); margin: 0; }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+  ol.how { margin: 0; padding-left: 22px; }
+  ol.how li { margin: 0 0 8px; }
+  ol.how b { font-weight: 600; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 28px; }
+  footer p { margin: 4px 0; }
+  .error { color: var(--no); }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+<main id="app"><p class="meta">Loading…</p></main>
+
+<script>
+// ---- Settings ---------------------------------------------------------------
+const CONFIG = {
+  // The labeler's Fly app, which serves /demo/match, /demo/summary and
+  // /demo/feedback (src/demo-api.ts). Its DEMO_ORIGINS must include this
+  // page's origin for feedback to be accepted.
+  API_BASE: 'https://crossnote-labeler.fly.dev',
+  LABELER_HANDLE: 'crossnote.bsky.social',
+  REPO_URL: 'https://github.com/NishkaArora/CrossNote',
+  PAPER_URL: '',  // add when the paper is on arXiv
+  // Stage 1 settings shown on the front page (configs/thresholds.yaml). Post
+  // pages use the values the server returns for that match.
+  TFIDF_THRESHOLD: 0.1375895433401011,
+  EMBEDDING_THRESHOLD: 0.5003167390823364,
+  TOP_K: 3,
+};
+// -----------------------------------------------------------------------------
+
+(function () {
+  const app = document.getElementById('app');
+  // replaceChildren() would print a skipped (null) section as the text "null".
+  const render = (...nodes) => app.replaceChildren(...nodes.filter((n) => n != null && n !== false));
+  const params = new URLSearchParams(location.search);
+  const EXAMPLE = params.has('example');
+  // Local testing only: ?api=http://localhost:8080 points the page at a local labeler.
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(params.get('api') || '')) {
+    CONFIG.API_BASE = params.get('api');
+  }
+
+  // ---- helpers --------------------------------------------------------------
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    if (attrs) {
+      for (const [k, v] of Object.entries(attrs)) {
+        if (v == null || v === false) continue;
+        if (k === 'class') el.className = v;
+        else if (k === 'style') el.setAttribute('style', v);
+        else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? '' : v);
+      }
+    }
+    for (const kid of kids.flat(Infinity)) {
+      if (kid == null || kid === false || kid === '') continue;
+      el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+    }
+    return el;
+  }
+  const ext = (href, text) => h('a', { href, target: '_blank', rel: 'noopener noreferrer' }, text);
+  const toDate = (iso) => { const d = iso ? new Date(iso) : null; return d && !isNaN(d) ? d : null; };
+  const fmtTime = (d) => d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const fmt3 = (x) => (typeof x === 'number' ? x.toFixed(3) : '—');
+  function fmtDur(ms) {
+    if (ms == null || !isFinite(ms)) return '—';
+    const mins = Math.round(Math.abs(ms) / 60000);
+    if (mins < 1) return 'under a minute';
+    if (mins < 60) return `${mins} min`;
+    const hours = mins / 60;
+    if (hours < 24) { const hr = Math.floor(hours), mi = mins % 60; return mi && hr < 10 ? `${hr} h ${mi} min` : `${Math.round(hours)} h`; }
+    const days = hours / 24;
+    if (days < 14) { const d = Math.floor(days), hr = Math.round(hours - d * 24); return hr ? `${d} d ${hr} h` : `${d} d`; }
+    return `${Math.round(days)} days`;
+  }
+  const decodeEntities = (s) => String(s || '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  function linkify(text) {
+    const out = []; const re = /https?:\/\/[^\s<>"]*[^\s<>".,;:!?)\]'"]/g;
+    let last = 0, m;
+    while ((m = re.exec(text))) { out.push(text.slice(last, m.index), ext(m[0], m[0])); last = m.index + m[0].length; }
+    out.push(text.slice(last));
+    return out;
+  }
+  const truncate = (s, n) => (s.length > n ? s.slice(0, n).trimEnd() + '…' : s);
+  const bskyUrl = (did, rkey) => `https://bsky.app/profile/${did}/post/${rkey}`;
+  const bskyUrlFromAt = (uri) => { const m = uri && uri.match(/^at:\/\/([^/]+)\/app\.bsky\.feed\.post\/([^/]+)$/); return m ? bskyUrl(m[1], m[2]) : null; };
+  const noteUrl = (id) => `https://x.com/i/birdwatch/n/${encodeURIComponent(id)}`;
+  const xPostUrl = (id) => `https://x.com/i/status/${encodeURIComponent(id)}`;
+  const postHref = (uri) => `?uri=${encodeURIComponent(uri)}`;
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src; s.async = true; s.charset = 'utf-8'; s.onload = resolve; s.onerror = reject;
+      document.body.append(s);
+    });
+  }
+  async function getJson(url) {
+    const r = await fetch(url, { cache: 'no-store' });
+    let body = null; try { body = await r.json(); } catch {}
+    return { status: r.status, ok: r.ok, body };
+  }
+
+  // ---- input parsing --------------------------------------------------------
+  function parsePostInput(raw) {
+    const s = raw.trim();
+    let m = s.match(/^at:\/\/([^/\s]+)\/app\.bsky\.feed\.post\/([A-Za-z0-9._~:-]+)\/?$/);
+    if (m) return { actor: m[1], rkey: m[2] };
+    m = s.match(/^(?:https?:\/\/)?(?:www\.)?(?:bsky\.app|deer\.social|blacksky\.community)\/profile\/([^/\s?#]+)\/post\/([A-Za-z0-9._~:-]+)/i);
+    if (m) return { actor: decodeURIComponent(m[1]), rkey: m[2] };
+    if (/^did:[a-z]+:/i.test(s)) return { error: "That's an account ID (DID), which covers every post by an account. Paste the link to one post instead." };
+    if (/^@?[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(s)) return { error: "That's an account handle. Paste the link to one of its posts instead." };
+    return { error: 'Paste a Bluesky post link, like https://bsky.app/profile/name.bsky.social/post/3l…' };
+  }
+  async function resolveActor(actor) {
+    if (actor.startsWith('did:')) return actor;
+    const u = new URL('https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle');
+    u.searchParams.set('handle', actor.replace(/^@/, ''));
+    const r = await getJson(u);
+    if (!r.ok || !r.body || !r.body.did) throw new Error(`Couldn't find the account @${actor}.`);
+    return r.body.did;
+  }
+
+  // ---- shared pieces --------------------------------------------------------
+  function header(title, sub) {
+    return h('header', null,
+      h('a', { class: 'brand', href: './' }, 'CrossNote'),
+      h('h1', null, title),
+      sub ? h('p', null, sub) : null);
+  }
+  function exampleNotice() {
+    return EXAMPLE ? h('div', { class: 'notice' },
+      h('b', null, 'Example data. '), 'This is a made-up post and note that show what a real result page looks like. ',
+      h('a', { href: './' }, 'Look up a real post')) : null;
+  }
+  function footer(extra) {
+    return h('footer', null,
+      h('p', null, 'CrossNote finds Bluesky posts that make a claim a Community Note on X already corrects, labels them through a Bluesky labeler, and replies with the note.'),
+      h('p', null,
+        ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), ' · ',
+        ext(CONFIG.REPO_URL, 'Code and method'),
+        CONFIG.PAPER_URL ? [' · ', ext(CONFIG.PAPER_URL, 'Paper')] : null,
+        ' · ', ext(`${CONFIG.REPO_URL}/issues/new?template=wrong_label.yml`, 'Report a wrong label')),
+      extra ? h('p', null, extra) : null);
+  }
+  function errorCard(title, detail) {
+    return h('div', { class: 'card' }, h('p', { class: 'error' }, h('b', null, title)), detail ? h('p', { class: 'meta' }, detail) : null);
+  }
+  function verdictPill(c) {
+    if (c.error) return h('span', { class: 'pill neutral' }, 'Model call failed');
+    return c.applicable ? h('span', { class: 'pill ok' }, '✓ Applies') : h('span', { class: 'pill no' }, '✕ Doesn’t apply');
+  }
+  function tile(label, value, sub, swatch) {
+    return h('div', { class: 'tile' },
+      h('div', { class: 'label' }, swatch ? h('span', { class: 'swatch', style: `background:${swatch}`, 'aria-hidden': 'true' }) : null, label),
+      h('div', { class: 'value' }, value),
+      sub ? h('div', { class: 'sub' }, sub) : null);
+  }
+  // A score on a 0–1 scale, with the threshold it had to reach.
+  function meter(name, value, threshold) {
+    const pct = (x) => `${Math.max(0, Math.min(1, x)) * 100}%`;
+    const passed = typeof value === 'number' && typeof threshold === 'number' ? value >= threshold : null;
+    const aria = `${name}: ${fmt3(value)}${typeof threshold === 'number' ? `, threshold ${fmt3(threshold)}${passed ? ', passed' : ''}` : ''}`;
+    return h('div', { class: 'meter', role: 'img', 'aria-label': aria, title: aria },
+      h('div', { class: 'bar' },
+        typeof value === 'number' ? h('div', { class: 'fill', style: `width:${pct(value)}` }) : null,
+        typeof threshold === 'number' ? h('div', { class: 'tick', style: `left:${pct(threshold)}` }) : null),
+      h('div', { class: 'fig' }, fmt3(value)),
+      h('div', { class: 'cap', 'aria-hidden': 'true' },
+        typeof threshold === 'number' ? `Needed at least ${fmt3(threshold)} (the black mark). ` : '',
+        passed === true ? 'Passed.' : ''));
+  }
+
+  // ---- front page -----------------------------------------------------------
+  function lookupCard(initial, message) {
+    const input = h('input', { type: 'text', name: 'post', id: 'post-input', inputmode: 'url', autocomplete: 'off', spellcheck: 'false',
+      placeholder: 'https://bsky.app/profile/…/post/…', value: initial || '', 'aria-describedby': 'lookup-help' });
+    const msg = h('p', { class: 'meta error', role: 'status', 'aria-live': 'polite' }, message || '');
+    const button = h('button', { class: 'btn primary', type: 'submit' }, 'Look up');
+    const form = h('form', {
+      class: 'lookup', onsubmit: async (e) => {
+        e.preventDefault();
+        const parsed = parsePostInput(input.value);
+        if (parsed.error) { msg.textContent = parsed.error; return; }
+        button.disabled = true; msg.textContent = '';
+        try {
+          const did = await resolveActor(parsed.actor);
+          location.search = postHref(`at://${did}/app.bsky.feed.post/${parsed.rkey}`);
+        } catch (err) {
+          msg.textContent = err.message || String(err);
+          button.disabled = false;
+        }
+      },
+    }, h('label', { class: 'sr-only', for: 'post-input' }, 'Bluesky post link'), input, button);
+    return h('section', { class: 'card' },
+      h('h2', null, 'Look up a post'),
+      form, msg,
+      h('p', { class: 'meta', id: 'lookup-help' },
+        'On Bluesky, open the post’s ··· menu and choose “Copy link to post”. ',
+        'Only posts CrossNote has labeled have a page. ',
+        h('a', { href: '?example=1' }, 'See an example')));
+  }
+
+  function howItWorksCard() {
+    return h('section', { class: 'card' },
+      h('h2', null, 'How CrossNote matches a post'),
+      h('p', null, 'CrossNote doesn’t write fact-checks. It reuses Community Notes that X raters have already rated Helpful, so a Bluesky post making the same claim can be labeled within minutes.'),
+      h('ol', { class: 'how' },
+        h('li', null, h('b', null, 'Note library. '), 'Notes first rated Helpful on X in the past week, kept only if their X post is in English and the note makes sense without a particular author, image or video.'),
+        h('li', null, h('b', null, 'Post filters. '), 'Original posts and quote posts (no replies), in English or untagged, longer than two words.'),
+        h('li', null, h('b', null, 'Word overlap. '), `The post’s highest TF-IDF similarity to any note must be at least ${CONFIG.TFIDF_THRESHOLD.toFixed(3)}. This step runs locally and is cheap.`),
+        h('li', null, h('b', null, 'Meaning. '), `Its highest embedding similarity (text-embedding-3-large) to any note must be at least ${CONFIG.EMBEDDING_THRESHOLD.toFixed(3)}.`),
+        h('li', null, h('b', null, `Top ${CONFIG.TOP_K}. `), `The ${CONFIG.TOP_K} most similar notes go to a language model, which judges whether each note applies to the post (`, ext(`${CONFIG.REPO_URL}/blob/main/prompts/applicability.txt`, 'prompt'), ').'),
+        h('li', null, h('b', null, 'Label and reply. '), 'The highest-ranked note the model accepts is attached as a misinformation label, and the bot replies with the full note and a link to the X post.')),
+      h('p', { class: 'meta' }, 'In the paper’s evaluation, the final check was correct 96% of the time when it said a note applied. It still makes mistakes, which is why each result page asks whether the match is right.'));
+  }
+
+  function privacyCard() {
+    return h('section', { class: 'card' },
+      h('h2', null, 'What this page shows'),
+      h('p', null, 'A post has a page here only while it carries a CrossNote label. Pages disappear if the label is removed, the post is deleted, or its author excludes their posts from logged-out viewers or asks to be excluded from CrossNote. There is no list of labeled posts.'),
+      h('p', { class: 'meta' }, 'No post text is stored by CrossNote; posts are shown through Bluesky’s and X’s own embeds. ',
+        ext(`${CONFIG.REPO_URL}#data-and-ethics`, 'Data and ethics')));
+  }
+
+  async function summaryCard() {
+    const box = h('section', { class: 'card', hidden: true }, h('h2', null, 'So far'));
+    if (EXAMPLE) return box;
+    getJson(`${CONFIG.API_BASE}/demo/summary`).then(({ ok, body }) => {
+      if (!ok || !body) return;
+      box.append(h('div', { class: 'tiles' },
+        tile('Posts labeled', (body.labeled_posts ?? 0).toLocaleString()),
+        body.median_label_delay_ms != null ? tile('Bluesky post → CrossNote label', fmtDur(body.median_label_delay_ms), 'median', 'var(--bsky)') : null,
+        body.median_x_delay_ms != null ? tile('X post → Helpful note on X', fmtDur(body.median_x_delay_ms), `median over the ${body.x_delay_notes} notes used`, 'var(--x)') : null,
+        body.library && body.library.notes ? tile('Notes in the library now', body.library.notes.toLocaleString()) : null));
+      box.hidden = false;
+    }).catch(() => {});
+    return box;
+  }
+
+  async function homeView(message) {
+    document.title = 'CrossNote Explorer';
+    render(
+      header('See why CrossNote labeled a post', 'Paste a Bluesky post to see the Community Note it was matched to, how each step of the pipeline scored it, and how long the correction took compared with X.'),
+      exampleNotice(),
+      lookupCard(params.get('post') || '', message),
+      await summaryCard(),
+      howItWorksCard(),
+      privacyCard(),
+      footer());
+  }
+
+  // ---- result page ----------------------------------------------------------
+  function sameClaimCard(d, c) {
+    const tweetId = c && (c.tweet_id || (c.note && c.note.tweet_id));
+    // Example mode shows made-up text instead of embedding posts that don't exist.
+    const exampleBox = (text) => h('div', { class: 'cand' }, h('p', { class: 'excerpt' }, text));
+    const bq = EXAMPLE ? exampleBox(d.example_post_text || '')
+      : h('blockquote', { class: 'bluesky-embed', 'data-bluesky-uri': d.uri },
+          h('p', null, ext(bskyUrl(d.did, d.rkey), 'View this post on Bluesky')));
+    const xBox = h('div', { id: 'x-embed', class: 'embed-box' },
+      EXAMPLE ? exampleBox(d.example_x_post_text || '')
+      : tweetId ? h('p', { class: 'fallback' }, ext(xPostUrl(tweetId), 'View the X post on X'))
+      : h('p', { class: 'meta' }, 'X post not available.'));
+    return h('section', { class: 'card' },
+      h('h2', null, 'Same claim, two platforms'),
+      h('div', { class: 'pair' },
+        h('div', null, h('h3', null, 'Bluesky post', d.handle ? h('span', { class: 'meta' }, ` · @${d.handle}`) : null), h('div', { class: 'embed-box' }, bq)),
+        h('div', null, h('h3', null, 'X post the note was written for'), xBox)));
+  }
+
+  function noteCard(d, c) {
+    if (!c) return null;
+    const text = c.note ? decodeEntities(c.note.text) : '';
+    const replyUrl = bskyUrlFromAt(d.reply_uri);
+    return h('section', { class: 'card' },
+      h('h2', null, 'The Community Note'),
+      text ? h('p', { class: 'note-text' }, linkify(text))
+           : h('p', { class: 'meta' }, `The note’s text isn’t available here${d.notes_error ? ` (${d.notes_error})` : ''}.`),
+      h('p', { class: 'meta' },
+        'Rated Helpful on X · ', ext(noteUrl(c.note_id), 'View the note on X'),
+        replyUrl ? [' · ', ext(replyUrl, 'CrossNote’s reply on Bluesky')] : null));
+  }
+
+  function timingCard(d, c) {
+    const n = (c && c.note) || {};
+    const xPost = toDate(n.x_post_created_at), noteWritten = toDate(n.note_created_at), helpful = toDate(n.note_helpful_at);
+    const bskyPost = toDate(d.posted_at), labeled = toDate(d.labeled_at);
+    const xWait = xPost && helpful ? Math.max(0, helpful - xPost) : null;
+    // A post's createdAt is set by the author's app, so it can be a little off the label's clock.
+    const cnWait = bskyPost && labeled ? Math.max(0, labeled - bskyPost) : null;
+    if (xWait == null && cnWait == null) return null;
+
+    // seq is the order the steps must happen in; it breaks near-ties caused by clock differences.
+    const events = [
+      { seq: 0, d: xPost, what: 'Post published', where: 'X', dot: 'var(--x)' },
+      { seq: 1, d: noteWritten, what: 'Community Note written', where: 'X', dot: 'var(--x)' },
+      { seq: 2, d: helpful, what: 'Note rated Helpful', where: 'X', dot: 'var(--x)' },
+      { seq: 3, d: bskyPost, what: 'Post published', where: 'Bluesky', dot: 'var(--bsky)' },
+      { seq: 4, d: labeled, what: d.reply_uri ? 'CrossNote labels it and replies with the note' : 'CrossNote labels it', where: 'Bluesky', dot: 'var(--bsky)' },
+    ].filter((e) => e.d).sort((a, b) => (Math.abs(a.d - b.d) < 120000 ? a.seq - b.seq : a.d - b.d));
+
+    let sentence = null;
+    if (helpful && bskyPost && helpful <= bskyPost && cnWait != null) {
+      sentence = `The note had already been rated Helpful on X for ${fmtDur(bskyPost - helpful)} when this Bluesky post was published, so CrossNote could apply it ${fmtDur(cnWait)} later.`;
+    } else if (cnWait != null) {
+      sentence = `CrossNote labeled this post ${fmtDur(cnWait)} after it was published.`;
+    }
+
+    return h('section', { class: 'card' },
+      h('h2', null, 'How long the correction took'),
+      h('div', { class: 'tiles' },
+        xWait != null ? tile('On X: post → Helpful note', fmtDur(xWait), 'raters wrote and agreed on the note', 'var(--x)') : null,
+        cnWait != null ? tile('On Bluesky: post → CrossNote label', fmtDur(cnWait), 'the note was reused, not rewritten', 'var(--bsky)') : null),
+      sentence ? h('p', { class: 'summary' }, sentence) : null,
+      h('ul', { class: 'timeline', 'aria-label': 'Timeline' },
+        events.map((e, i) => h('li', { style: `--dot:${e.dot}` },
+          h('div', { class: 'what' }, e.what, h('span', { class: 'where' }, ` · ${e.where}`)),
+          h('div', { class: 'when' }, fmtTime(e.d),
+            i > 0 ? h('span', { class: 'gap' }, ` · ${fmtDur(Math.max(0, e.d - events[i - 1].d))} later`) : null)))),
+      h('p', { class: 'meta' }, 'The two waits measure different things: on X, people had to write and rate a new note; CrossNote only had to recognise a claim that already had one.'));
+  }
+
+  function pipelineCard(d) {
+    const t = d.thresholds || {};
+    const cands = Array.isArray(d.candidates) ? d.candidates : [];
+    const libNotes = d.library && d.library.notes;
+    const libText = libNotes ? `any of the ${libNotes.toLocaleString()} notes in the library` : 'any note in the library';
+    return h('section', { class: 'card' },
+      h('h2', null, 'What the pipeline did'),
+      h('div', { class: 'step' },
+        h('h3', null, h('span', { class: 'n' }, '1'), 'Post filters', h('span', { class: 'pill ok' }, '✓ Passed')),
+        h('p', null, 'An original or quote post, in English or with no language tag, longer than two words.')),
+      h('div', { class: 'step' },
+        h('h3', null, h('span', { class: 'n' }, '2'), 'Word overlap (TF-IDF)', h('span', { class: 'pill ok' }, '✓ Passed')),
+        h('p', null, `How many of the same words the post shares with ${libText}, weighted by how rare the words are.`),
+        meter('Highest TF-IDF similarity', d.scores && d.scores.tfidf_max, t.tfidf ?? CONFIG.TFIDF_THRESHOLD)),
+      h('div', { class: 'step' },
+        h('h3', null, h('span', { class: 'n' }, '3'), 'Meaning (embeddings)', h('span', { class: 'pill ok' }, '✓ Passed')),
+        h('p', null, `How close the post is in meaning to ${libText}, using text-embedding-3-large.`),
+        meter('Highest embedding similarity', d.scores && d.scores.cosine_max, t.embedding ?? CONFIG.EMBEDDING_THRESHOLD)),
+      h('div', { class: 'step' },
+        h('h3', null, h('span', { class: 'n' }, '4'), `Top ${cands.length || t.top_k || CONFIG.TOP_K} notes and the model’s check`),
+        h('p', null, 'The most similar notes, in order, each judged by a language model: does this note apply to this post? The highest-ranked note it accepts is the one CrossNote used.'),
+        cands.map((x) => {
+          const isChosen = String(x.note_id) === String(d.chosen_note_id);
+          const text = x.note ? decodeEntities(x.note.text) : '';
+          return h('div', { class: 'cand' + (isChosen ? ' chosen' : '') },
+            h('div', { class: 'top' },
+              h('span', null, `#${x.rank}`),
+              h('span', null, `similarity ${fmt3(x.cosine)}`),
+              h('span', null, `TF-IDF ${fmt3(x.tfidf)}`),
+              verdictPill(x),
+              isChosen ? h('span', { class: 'pill shown' }, 'Used') : null),
+            h('p', { class: 'excerpt' }, text ? truncate(text, 260) : h('span', { class: 'meta' }, `Note ${x.note_id}`)),
+            x.reason ? h('p', { class: 'why' }, h('b', null, 'Model’s reason: '), x.reason) : null,
+            h('p', { class: 'meta' }, ext(noteUrl(x.note_id), 'Note on X')));
+        })),
+      d.library && d.library.name ? h('p', { class: 'meta' }, `Library snapshot ${d.library.name}${d.library.export_date ? `, from the Community Notes export of ${d.library.export_date}` : ''}.`) : null);
+  }
+
+  function feedbackCard(d) {
+    const key = `crossnote-feedback:${d.uri}`;
+    const previous = store.get(key);
+    const status = h('p', { class: 'meta', role: 'status', 'aria-live': 'polite' });
+    if (previous) {
+      return h('section', { class: 'card' },
+        h('h2', null, 'Is this a good match?'),
+        h('p', null, `Thanks. You answered “${{ yes: 'Yes', no: 'No', unsure: 'Not sure' }[previous] || previous}”.`));
+    }
+    let answer = null;
+    const comment = h('textarea', { id: 'fb-comment', maxlength: '1000', placeholder: 'Optional: why? For example, “the post is criticising the claim, not making it”.' });
+    const send = h('button', { class: 'btn primary', type: 'submit', disabled: true }, 'Send answer');
+    const choice = (value, label) => h('button', {
+      class: 'btn', type: 'button', 'aria-pressed': 'false',
+      onclick: (e) => {
+        answer = value; send.disabled = false;
+        for (const b of e.currentTarget.parentNode.children) b.setAttribute('aria-pressed', String(b === e.currentTarget));
+      },
+    }, label);
+    const form = h('form', {
+      onsubmit: async (e) => {
+        e.preventDefault();
+        if (!answer) return;
+        if (EXAMPLE) { status.textContent = 'This is example data, so the answer wasn’t sent.'; return; }
+        send.disabled = true; status.textContent = 'Sending…';
+        try {
+          const r = await fetch(`${CONFIG.API_BASE}/demo/feedback`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uri: d.uri, answer, comment: comment.value.trim() || undefined }),
+          });
+          const body = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(body.message || `HTTP ${r.status}`);
+          store.set(key, answer);
+          form.replaceWith(h('p', null, 'Thanks, your answer was recorded. It helps us measure how often CrossNote is right.'));
+          status.textContent = '';
+        } catch (err) {
+          status.textContent = `Couldn’t send your answer: ${err.message}`;
+          send.disabled = false;
+        }
+      },
+    },
+      h('div', { class: 'choices', role: 'group', 'aria-label': 'Does this note apply?' },
+        choice('yes', 'Yes, it applies'), choice('no', 'No, wrong match'), choice('unsure', 'Not sure')),
+      h('label', { class: 'sr-only', for: 'fb-comment' }, 'Comment'),
+      comment,
+      h('div', { style: 'margin-top:10px' }, send));
+    return h('section', { class: 'card' },
+      h('h2', null, 'Is this a good match?'),
+      h('p', null, 'Does the Community Note correct a claim this Bluesky post actually makes?'),
+      form, status,
+      h('p', { class: 'meta' }, 'Your answer is stored with this post’s link and the note ID. We don’t store your IP address or account. If you wrote the post and want the label removed, ',
+        ext(`${CONFIG.REPO_URL}/issues/new?template=wrong_label.yml`, 'report it'), '.'));
+  }
+
+  function resultView(d) {
+    const c = (d.candidates || []).find((x) => String(x.note_id) === String(d.chosen_note_id)) || null;
+    document.title = 'CrossNote Explorer · Matched post';
+    render(
+      header('Why CrossNote labeled this post', 'CrossNote matched this Bluesky post to a Community Note written on X for a post making the same claim.'),
+      exampleNotice(),
+      h('div', { class: 'notice' }, 'This is an automated match and may be wrong. The label is only shown to people who subscribe to ',
+        ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), '.'),
+      sameClaimCard(d, c),
+      noteCard(d, c),
+      timingCard(d, c),
+      pipelineCard(d),
+      feedbackCard(d),
+      footer(h('a', { href: './' }, 'Look up another post')));
+    embedBluesky();
+    embedX(c);
+  }
+
+  function notFoundView(uri) {
+    document.title = 'CrossNote Explorer · No label';
+    render(
+      header('CrossNote hasn’t labeled this post', null),
+      h('section', { class: 'card' },
+        h('p', null, 'There’s no current CrossNote label for ', ext(bskyUrlFromAt(uri) || '#', 'this post'), '. Most posts never get one. Some reasons:'),
+        h('ul', null,
+          h('li', null, 'CrossNote only checks posts from accounts that follow ', ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), ', and only posts made after they followed.'),
+          h('li', null, 'The post didn’t make a claim that a recent Helpful Community Note corrects, or it was a reply.'),
+          h('li', null, 'The label was removed, the post was deleted, or its author limits who can see their posts.'))),
+      lookupCard(''),
+      footer());
+  }
+
+  // ---- embeds ---------------------------------------------------------------
+  async function embedBluesky() {
+    if (EXAMPLE) return;
+    try {
+      await loadScript('https://embed.bsky.app/static/embed.js');
+      setTimeout(() => { if (window.bluesky && typeof window.bluesky.scan === 'function') window.bluesky.scan(); }, 800);
+    } catch { /* the link stays */ }
+  }
+  async function embedX(c) {
+    const id = c && (c.tweet_id || (c.note && c.note.tweet_id));
+    if (!id || EXAMPLE) return;
+    try {
+      await loadScript('https://platform.twitter.com/widgets.js');
+      const box = document.getElementById('x-embed');
+      const el = await window.twttr.widgets.createTweet(String(id), box, { conversation: 'none', dnt: true });
+      const fb = box.querySelector('.fallback');
+      if (el && fb) fb.remove();
+    } catch { /* the link stays */ }
+  }
+
+  // ---- start ----------------------------------------------------------------
+  async function main() {
+    if (EXAMPLE) {
+      try {
+        const r = await getJson('example.json');
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        resultView(r.body);
+      } catch (e) {
+        render(header('Example unavailable'), errorCard('Could not load the example.', String(e)));
+      }
+      return;
+    }
+
+    let uri = params.get('uri');
+    // Older links: ?did=…&rkey=…, or ?post=<bsky.app link>.
+    if (!uri && params.get('did') && params.get('rkey')) uri = `at://${params.get('did')}/app.bsky.feed.post/${params.get('rkey')}`;
+    if (!uri && params.get('post')) {
+      const p = parsePostInput(params.get('post'));
+      if (p.error) return homeView(p.error);
+      try { uri = `at://${await resolveActor(p.actor)}/app.bsky.feed.post/${p.rkey}`; }
+      catch (e) { return homeView(e.message); }
+      history.replaceState(null, '', postHref(uri));
+    }
+    if (!uri) return homeView();
+
+    render(header('Looking up the post…'), h('p', { class: 'meta' }, 'Checking CrossNote’s records.'));
+    let r;
+    try {
+      r = await getJson(`${CONFIG.API_BASE}/demo/match?uri=${encodeURIComponent(uri)}`);
+    } catch (e) {
+      render(header('CrossNote is unreachable'), errorCard('Couldn’t reach the CrossNote server.', 'Please try again in a few minutes.'), footer());
+      return;
+    }
+    if (r.status === 404) return notFoundView(uri);
+    if (r.status === 400) return homeView('That doesn’t look like a Bluesky post link.');
+    if (!r.ok || !r.body) {
+      render(header('Something went wrong'), errorCard('Couldn’t load this post.', (r.body && r.body.message) || `HTTP ${r.status}`), footer());
+      return;
+    }
+    resultView(r.body);
+  }
+
+  main();
+})();
+</script>
+</body>
+</html>
