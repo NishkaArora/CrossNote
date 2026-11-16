@@ -106,6 +106,29 @@ export async function fetchMatcherHealth(): Promise<{ ready: boolean; library: s
   return (await response.json()) as { ready: boolean; library: string | null; notes: number };
 }
 
+export interface DemoRerun {
+  stage: "not_ready" | "length" | "tfidf" | "embedding" | "stage3";
+  library: string | null;
+  tfidf_max?: number;
+  cosine_max?: number;
+  candidates?: (Stage3Judgment & { note_text: string | null })[];
+  match: string | null;  // note ID
+  thresholds: DemoNotes["thresholds"];
+}
+
+/** The pipeline on edited text, for the demo page: nothing is counted, logged or labelled. */
+export async function rerunDemo(text: string, library: string | null): Promise<DemoRerun> {
+  const response = await fetch("http://localhost/demo/rerun", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, library }),
+    dispatcher: socketAgent,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error(`matcher /demo/rerun → HTTP ${response.status}`);
+  return (await response.json()) as DemoRerun;
+}
+
 /** Runs the post through Stages 1-3. Resolves null if the queue is full. */
 export function matchPost(text: string, uri: string): Promise<MatchResponse | null> {
   if (queue.length >= MAX_QUEUE) {

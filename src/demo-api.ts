@@ -3,6 +3,7 @@
 //   GET  /demo/match?uri=at://...   why one labelled post was matched
 //   GET  /demo/summary              aggregate numbers for the front page
 //   POST /demo/feedback             "Does this note apply?" answer
+//   POST /demo/rerun                the pipeline on an edited version of a labelled post
 //
 // Only posts that are labelled right now are served, one at a time by URI:
 // there is no endpoint that lists labelled posts or accounts. A post is not
@@ -17,18 +18,25 @@ import express, { type Request } from "express";
 import { closeSync, fstatSync, openSync, readSync } from "fs";
 import { StringDecoder } from "string_decoder";
 import * as db from "./db.js";
-import { fetchDemoNotes, fetchMatcherHealth, type DemoNote, type DemoNotes } from "./crossnote-pipeline.js";
+import { fetchDemoNotes, fetchMatcherHealth, rerunDemo, type DemoNote, type DemoNotes } from "./crossnote-pipeline.js";
 import { EXCLUDED_DIDS, MATCH_LOG_PATH, PUBLIC_APPVIEW } from "./stream.js";
 
-// Origins allowed to POST feedback, e.g. https://<user>.github.io. Reads are
-// open to any origin: they return nothing beyond what the label and reply
-// already make public.
-const FEEDBACK_ORIGINS = new Set(
+// Origins allowed to POST (feedback, reruns), e.g. https://<user>.github.io.
+// Reads are open to any origin: they return nothing beyond what the label
+// and reply already make public.
+const DEMO_ORIGINS = new Set(
   (process.env.DEMO_ORIGINS ?? "").split(",").map((o) => o.trim().replace(/\/+$/, "")).filter(Boolean));
 const FEEDBACK_PER_IP_PER_HOUR = 10;
 const FEEDBACK_TOTAL_PER_HOUR  = 300;
 const COMMENT_MAX_CHARS        = 1000;
 const POST_CACHE_MS            = 10 * 60_000;
+// Reruns call OpenAI (one embedding and up to three Stage 3 calls), so they
+// are capped. DEMO_RERUN=0 turns them off.
+const RERUN_ENABLED            = process.env.DEMO_RERUN !== "0";
+const RERUN_PER_IP_PER_HOUR    = 5;
+const RERUN_PER_DAY            = parseInt(process.env.DEMO_RERUN_PER_DAY ?? "100", 10);
+const RERUN_MAX_IN_FLIGHT      = 2;
+const RERUN_MAX_CHARS          = 1000;
 const SUMMARY_CACHE_MS         = 10 * 60_000;
 
 const POST_URI = /^at:\/\/(did:[a-z]+:[A-Za-z0-9._:%-]{1,256})\/app\.bsky\.feed\.post\/([A-Za-z0-9._~:-]{1,512})$/;
@@ -175,6 +183,25 @@ function feedbackAllowed(ip: string): boolean {
   return true;
 }
 
+// Reruns: per-IP hourly cap, a daily total, and a small in-flight limit so
+// what-if runs never crowd out live matching.
+const rerunTimes = new Map<string, number[]>();
+let rerunDay: number[] = [];
+let rerunsInFlight = 0;
+
+function rerunAllowed(ip: string): "ok" | "ip" | "day" {
+  const now = Date.now();
+  rerunDay = rerunDay.filter((t) => t > now - 86400_000);
+  const mine = (rerunTimes.get(ip) ?? []).filter((t) => t > now - 3600_000);
+  if (rerunDay.length >= RERUN_PER_DAY) return "day";
+  if (mine.length >= RERUN_PER_IP_PER_HOUR) return "ip";
+  mine.push(now);
+  rerunDay.push(now);
+  if (rerunTimes.size > 10_000) rerunTimes.clear();
+  rerunTimes.set(ip, mine);
+  return "ok";
+}
+
 const clientIp = (req: Request) => req.get("fly-client-ip") ?? req.socket.remoteAddress ?? "unknown";
 
 // ── Routes ───────────────────────────────────────────────────────────────────
@@ -183,10 +210,10 @@ export const demoRouter = express.Router();
 
 demoRouter.use((req, res, next) => {
   const origin = req.get("origin")?.replace(/\/+$/, "");
-  const isFeedback = req.path === "/feedback";
-  if (!isFeedback) {
+  const isWrite = req.path === "/feedback" || req.path === "/rerun";
+  if (!isWrite) {
     res.set("Access-Control-Allow-Origin", "*");
-  } else if (origin && FEEDBACK_ORIGINS.has(origin)) {
+  } else if (origin && DEMO_ORIGINS.has(origin)) {
     res.set("Access-Control-Allow-Origin", origin);
     res.set("Vary", "Origin");
     res.set("Access-Control-Allow-Methods", "POST");
@@ -331,7 +358,7 @@ demoRouter.get("/summary", async (_req, res) => {
 
 demoRouter.post("/feedback", express.json({ limit: "4kb" }), (req, res) => {
   const origin = req.get("origin")?.replace(/\/+$/, "");
-  if (!origin || !FEEDBACK_ORIGINS.has(origin)) {
+  if (!origin || !DEMO_ORIGINS.has(origin)) {
     res.status(403).json({ error: "Forbidden", message: "Feedback is only accepted from the demo page." });
     return;
   }
@@ -356,4 +383,62 @@ demoRouter.post("/feedback", express.json({ limit: "4kb" }), (req, res) => {
   const text = typeof comment === "string" ? comment.trim().slice(0, COMMENT_MAX_CHARS) : "";
   db.logFeedback(uri, m.note_id, answer, text || null);
   res.json({ ok: true });
+});
+
+demoRouter.post("/rerun", express.json({ limit: "8kb" }), async (req, res) => {
+  const origin = req.get("origin")?.replace(/\/+$/, "");
+  if (!origin || !DEMO_ORIGINS.has(origin)) {
+    res.status(403).json({ error: "Forbidden", message: "Reruns are only accepted from the demo page." });
+    return;
+  }
+  if (!RERUN_ENABLED) {
+    res.status(503).json({ error: "Disabled", message: "Trying edits is turned off right now." });
+    return;
+  }
+  const { uri, text } = (req.body ?? {}) as Record<string, unknown>;
+  const edited = typeof text === "string" ? text.trim() : "";
+  if (typeof uri !== "string" || !POST_URI.test(uri) || !edited || edited.length > RERUN_MAX_CHARS) {
+    res.status(400).json({ error: "InvalidRequest", message: `uri and text (1 to ${RERUN_MAX_CHARS} characters) are required` });
+    return;
+  }
+  const m = liveMatch(uri);
+  if (!m) {
+    res.status(404).json(NOT_FOUND);
+    return;
+  }
+  if (rerunsInFlight >= RERUN_MAX_IN_FLIGHT) {
+    res.status(503).json({ error: "Busy", message: "Other edits are running. Please try again in a moment." });
+    return;
+  }
+  const allowed = rerunAllowed(clientIp(req));
+  if (allowed !== "ok") {
+    res.status(429).json({ error: "RateLimited", message: allowed === "day"
+      ? "The demo has reached today's limit for trying edits. Please try again tomorrow."
+      : "You've tried several edits in the last hour. Please try again later." });
+    return;
+  }
+  rerunsInFlight++;
+  try {
+    const r = await rerunDemo(edited, m.library);
+    if (r.stage === "not_ready") {
+      res.status(503).json({ error: "NotReady", message: "The pipeline isn't ready right now. Please try again later." });
+      return;
+    }
+    res.json({
+      stage: r.stage,
+      library: r.library,
+      thresholds: r.thresholds,
+      scores: { tfidf_max: r.tfidf_max ?? null, cosine_max: r.cosine_max ?? null },
+      chosen_note_id: r.match,
+      candidates: (r.candidates ?? []).map((c) => ({
+        rank: c.rank, note_id: c.note_id, tweet_id: c.tweet_id, cosine: c.cosine, tfidf: c.tfidf,
+        applicable: c.applicable, reason: c.reason, error: c.error ? "the model call failed" : null,
+        note: c.note_text ? { text: c.note_text } : null,
+      })),
+    });
+  } catch {
+    res.status(502).json({ error: "MatcherUnavailable", message: "The pipeline couldn't run right now. Please try again later." });
+  } finally {
+    rerunsInFlight--;
+  }
 });

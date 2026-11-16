@@ -11,11 +11,10 @@ Paper: [*Community Notes Across Platforms: Evaluating the Feasibility of Re-usin
 
 ## How it works
 
-1. **Note library.** Notes first rated Helpful on X in the past 7 days whose X post is in English, minus notes that only make sense for a particular author, image or video. Rebuilt periodically.
-2. **Post filters.** Original and quote posts in English, longer than two words.
-3. **Stage 1.** TF-IDF similarity to a note of at least 0.1376, then embedding similarity (text-embedding-3-large) of at least 0.5003.
-4. **Stage 2.** The 3 most similar notes.
-5. **Stage 3.** An LLM judges whether each note applies to the post; the highest-ranked applicable note is used.
+1. **Note library.** crossnote collects Community Notes first rated Helpful on X in the past 7 days, keeping those whose X post is in English and that make sense without a particular author, image or video. The library is rebuilt periodically.
+2. **Stage 1: filter.** Each new English post on Bluesky (originals and quotes, not replies) is compared with every note in the library. It moves on only if it shares enough words with some note (TF-IDF similarity ≥ 0.1376) and is close enough in meaning (text-embedding-3-large similarity ≥ 0.5003).
+3. **Stage 2: shortlist.** The 3 notes closest in meaning to the post become its candidates.
+4. **Stage 3: judge.** An LLM reads the post alongside each candidate note and the X post it was written for, and decides whether the note corrects a claim the post makes. If one does, crossnote labels the post and replies with that note.
 
 In the paper's evaluation, 72.6% of the pipeline's matches on the live Bluesky stream were correct, and it found 70.1% of known-positive posts.
 
