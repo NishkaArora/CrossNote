@@ -6,8 +6,7 @@ Paper: [*Community Notes Across Platforms: Evaluating the Feasibility of Re-usin
 
 - **See labels:** subscribe to [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.social).
 - **Have your posts checked:** follow the account.
-- **See why a post was labeled:** paste its link into the [demo](https://crossnote-bsky.github.io/inspect_and_give_feedback/).
-- **Wrong label?** [Report it](../../issues/new?template=wrong_label.yml).
+- **See why a post was labeled, or tell us it's wrong:** paste its link into the [demo](https://crossnote-bsky.github.io/inspect_and_give_feedback/).
 
 ## How it works
 
