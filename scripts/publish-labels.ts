@@ -1,5 +1,5 @@
 /**
- * One-time setup script: declares the "misinformation" label on the CrossNote
+ * One-time setup script: declares the "misinformation" label on the crossnote
  * labeler account. Run this once locally after the account is created:
  *
  *   npx tsx scripts/publish-labels.ts

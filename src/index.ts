@@ -47,7 +47,7 @@ if (MODE_RAW !== "followers" && MODE_RAW !== "full") {
 }
 const MODE = MODE_RAW as StreamMode;
 
-app.get("/", (_req, res) => res.send("CrossNote Labeler is running"));
+app.get("/", (_req, res) => res.send("crossnote labeler is running"));
 app.get("/stats", (_req, res) => res.json(streamStats));
 
 // API for the demo page in demo/ (GitHub Pages). See src/demo-api.ts.

@@ -201,7 +201,7 @@ demoRouter.use((req, res, next) => {
   next();
 });
 
-const NOT_FOUND = { error: "NotFound", message: "CrossNote has no current label for this post." };
+const NOT_FOUND = { error: "NotFound", message: "crossnote has no current label for this post." };
 
 demoRouter.get("/match", async (req, res) => {
   const uri = typeof req.query.uri === "string" ? req.query.uri : "";
@@ -291,7 +291,7 @@ demoRouter.get("/summary", async (_req, res) => {
     return Number.isFinite(d) && d >= 0 && d < 7 * 86400_000 ? [d] : [];
   });
 
-  // X post → note first rated Helpful, for the notes CrossNote applied.
+  // X post → note first rated Helpful, for the notes crossnote applied.
   const byLibrary = new Map<string, Set<string>>();
   for (const m of live) {
     if (!m.library) continue;

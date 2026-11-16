@@ -1,6 +1,6 @@
-# Contributing to CrossNote
+# Contributing to crossnote
 
-Thanks for helping. CrossNote is a live labeler: anything merged to `main` deploys to the running bot, which labels and replies to real Bluesky posts. That's why a few kinds of change need more than a code review (see [Changes that affect live labels](#changes-that-affect-live-labels)).
+Thanks for helping. crossnote is a live labeler: anything merged to `main` deploys to the running bot, which labels and replies to real Bluesky posts. That's why a few kinds of change need more than a code review (see [Changes that affect live labels](#changes-that-affect-live-labels)).
 
 ## Set up
 

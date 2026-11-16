@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" href="data:,">
-<title>CrossNote Explorer</title>
+<title>crossnote explorer</title>
 <style>
   :root {
     --bg: #f6f6f3;
@@ -56,7 +56,7 @@
   a { color: var(--accent); }
   main { max-width: 960px; margin: 0 auto; padding: 28px 16px 64px; }
   header { margin-bottom: 8px; }
-  .brand { font-weight: 700; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); text-decoration: none; }
+  .brand { font-weight: 700; font-size: 17px; letter-spacing: .01em; color: var(--accent); text-decoration: none; }
   header h1 { font-size: 26px; line-height: 1.25; margin: 4px 0 6px; text-wrap: balance; }
   header p { margin: 0; color: var(--muted); max-width: 680px; }
   .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 10px 14px; margin: 18px 0; font-size: 14px; }
@@ -136,8 +136,8 @@ const CONFIG = {
   // page's origin for feedback to be accepted.
   API_BASE: 'https://crossnote-labeler.fly.dev',
   LABELER_HANDLE: 'crossnote.bsky.social',
-  REPO_URL: 'https://github.com/NishkaArora/CrossNote',
-  PAPER_URL: 'https://github.com/NishkaArora/CrossNote/blob/main/paper/community-notes-across-platforms.pdf',  // switch to arXiv once posted
+  REPO_URL: 'https://github.com/NishkaArora/crossnote_bsky',
+  PAPER_URL: 'https://github.com/NishkaArora/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf',  // switch to arXiv once posted
   // Stage 1 settings shown on the front page (configs/thresholds.yaml). Post
   // pages use the values the server returns for that match.
   TFIDF_THRESHOLD: 0.1375895433401011,
@@ -247,7 +247,7 @@ const CONFIG = {
   // ---- shared pieces --------------------------------------------------------
   function header(title, sub) {
     return h('header', null,
-      h('a', { class: 'brand', href: './' }, 'CrossNote'),
+      h('a', { class: 'brand', href: './' }, 'crossnote'),
       h('h1', null, title),
       sub ? h('p', null, sub) : null);
   }
@@ -258,7 +258,7 @@ const CONFIG = {
   }
   function footer(extra) {
     return h('footer', null,
-      h('p', null, 'CrossNote finds Bluesky posts that make a claim a Community Note on X already corrects, labels them through a Bluesky labeler, and replies with the note.'),
+      h('p', null, 'crossnote finds Bluesky posts that make a claim a Community Note on X already corrects, labels them through a Bluesky labeler, and replies with the note.'),
       h('p', null,
         ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), ' · ',
         ext(CONFIG.REPO_URL, 'Code and method'),
@@ -320,14 +320,14 @@ const CONFIG = {
       form, msg,
       h('p', { class: 'meta', id: 'lookup-help' },
         'On Bluesky, open the post’s ··· menu and choose “Copy link to post”. ',
-        'Only posts CrossNote has labeled have a page. ',
+        'Only posts crossnote has labeled have a page. ',
         h('a', { href: '?example=1' }, 'See an example')));
   }
 
   function howItWorksCard() {
     return h('section', { class: 'card' },
-      h('h2', null, 'How CrossNote matches a post'),
-      h('p', null, 'CrossNote doesn’t write fact-checks. It reuses Community Notes that X raters have already rated Helpful, so a Bluesky post making the same claim can be labeled within minutes.'),
+      h('h2', null, 'How crossnote matches a post'),
+      h('p', null, 'crossnote doesn’t write fact-checks. It reuses Community Notes that X raters have already rated Helpful, so a Bluesky post making the same claim can be labeled within minutes.'),
       h('ol', { class: 'how' },
         h('li', null, h('b', null, 'Note library. '), 'Notes first rated Helpful on X in the past week, kept only if their X post is in English and the note makes sense without a particular author, image or video.'),
         h('li', null, h('b', null, 'Post filters. '), 'Original posts and quote posts (no replies), in English or untagged, longer than two words.'),
@@ -341,8 +341,8 @@ const CONFIG = {
   function privacyCard() {
     return h('section', { class: 'card' },
       h('h2', null, 'What this page shows'),
-      h('p', null, 'A post has a page here only while it carries a CrossNote label. Pages disappear if the label is removed, the post is deleted, or its author excludes their posts from logged-out viewers or asks to be excluded from CrossNote. There is no list of labeled posts.'),
-      h('p', { class: 'meta' }, 'No post text is stored by CrossNote; posts are shown through Bluesky’s and X’s own embeds. ',
+      h('p', null, 'A post has a page here only while it carries a crossnote label. Pages disappear if the label is removed, the post is deleted, or its author excludes their posts from logged-out viewers or asks to be excluded from crossnote. There is no list of labeled posts.'),
+      h('p', { class: 'meta' }, 'No post text is stored by crossnote; posts are shown through Bluesky’s and X’s own embeds. ',
         ext(`${CONFIG.REPO_URL}#data-and-ethics`, 'Data and ethics')));
   }
 
@@ -353,7 +353,7 @@ const CONFIG = {
       if (!ok || !body) return;
       box.append(h('div', { class: 'tiles' },
         tile('Posts labeled', (body.labeled_posts ?? 0).toLocaleString()),
-        body.median_label_delay_ms != null ? tile('Bluesky post → CrossNote label', fmtDur(body.median_label_delay_ms), 'median', 'var(--bsky)') : null,
+        body.median_label_delay_ms != null ? tile('Bluesky post → crossnote label', fmtDur(body.median_label_delay_ms), 'median', 'var(--bsky)') : null,
         body.median_x_delay_ms != null ? tile('X post → Helpful note on X', fmtDur(body.median_x_delay_ms), `median over the ${body.x_delay_notes} notes used`, 'var(--x)') : null,
         body.library && body.library.notes ? tile('Notes in the library now', body.library.notes.toLocaleString()) : null));
       box.hidden = false;
@@ -362,9 +362,9 @@ const CONFIG = {
   }
 
   async function homeView(message) {
-    document.title = 'CrossNote Explorer';
+    document.title = 'crossnote explorer';
     render(
-      header('See why CrossNote labeled a post', 'Paste a Bluesky post to see the Community Note it was matched to, how each step of the pipeline scored it, and how long the correction took compared with X.'),
+      header('See why crossnote labeled a post', 'Paste a Bluesky post to see the Community Note it was matched to, how each step of the pipeline scored it, and how long the correction took compared with X.'),
       exampleNotice(),
       lookupCard(params.get('post') || '', message),
       await summaryCard(),
@@ -402,7 +402,7 @@ const CONFIG = {
            : h('p', { class: 'meta' }, `The note’s text isn’t available here${d.notes_error ? ` (${d.notes_error})` : ''}.`),
       h('p', { class: 'meta' },
         'Rated Helpful on X · ', ext(noteUrl(c.note_id), 'View the note on X'),
-        replyUrl ? [' · ', ext(replyUrl, 'CrossNote’s reply on Bluesky')] : null));
+        replyUrl ? [' · ', ext(replyUrl, 'crossnote’s reply on Bluesky')] : null));
   }
 
   function timingCard(d, c) {
@@ -420,28 +420,28 @@ const CONFIG = {
       { seq: 1, d: noteWritten, what: 'Community Note written', where: 'X', dot: 'var(--x)' },
       { seq: 2, d: helpful, what: 'Note rated Helpful', where: 'X', dot: 'var(--x)' },
       { seq: 3, d: bskyPost, what: 'Post published', where: 'Bluesky', dot: 'var(--bsky)' },
-      { seq: 4, d: labeled, what: d.reply_uri ? 'CrossNote labels it and replies with the note' : 'CrossNote labels it', where: 'Bluesky', dot: 'var(--bsky)' },
+      { seq: 4, d: labeled, what: d.reply_uri ? 'crossnote labels it and replies with the note' : 'crossnote labels it', where: 'Bluesky', dot: 'var(--bsky)' },
     ].filter((e) => e.d).sort((a, b) => (Math.abs(a.d - b.d) < 120000 ? a.seq - b.seq : a.d - b.d));
 
     let sentence = null;
     if (helpful && bskyPost && helpful <= bskyPost && cnWait != null) {
-      sentence = `The note had already been rated Helpful on X for ${fmtDur(bskyPost - helpful)} when this Bluesky post was published, so CrossNote could apply it ${fmtDur(cnWait)} later.`;
+      sentence = `The note had already been rated Helpful on X for ${fmtDur(bskyPost - helpful)} when this Bluesky post was published, so crossnote could apply it ${fmtDur(cnWait)} later.`;
     } else if (cnWait != null) {
-      sentence = `CrossNote labeled this post ${fmtDur(cnWait)} after it was published.`;
+      sentence = `crossnote labeled this post ${fmtDur(cnWait)} after it was published.`;
     }
 
     return h('section', { class: 'card' },
       h('h2', null, 'How long the correction took'),
       h('div', { class: 'tiles' },
         xWait != null ? tile('On X: post → Helpful note', fmtDur(xWait), 'raters wrote and agreed on the note', 'var(--x)') : null,
-        cnWait != null ? tile('On Bluesky: post → CrossNote label', fmtDur(cnWait), 'the note was reused, not rewritten', 'var(--bsky)') : null),
+        cnWait != null ? tile('On Bluesky: post → crossnote label', fmtDur(cnWait), 'the note was reused, not rewritten', 'var(--bsky)') : null),
       sentence ? h('p', { class: 'summary' }, sentence) : null,
       h('ul', { class: 'timeline', 'aria-label': 'Timeline' },
         events.map((e, i) => h('li', { style: `--dot:${e.dot}` },
           h('div', { class: 'what' }, e.what, h('span', { class: 'where' }, ` · ${e.where}`)),
           h('div', { class: 'when' }, fmtTime(e.d),
             i > 0 ? h('span', { class: 'gap' }, ` · ${fmtDur(Math.max(0, e.d - events[i - 1].d))} later`) : null)))),
-      h('p', { class: 'meta' }, 'The two waits measure different things: on X, people had to write and rate a new note; CrossNote only had to recognise a claim that already had one.'));
+      h('p', { class: 'meta' }, 'The two waits measure different things: on X, people had to write and rate a new note; crossnote only had to recognise a claim that already had one.'));
   }
 
   function pipelineCard(d) {
@@ -464,7 +464,7 @@ const CONFIG = {
         meter('Highest embedding similarity', d.scores && d.scores.cosine_max, t.embedding ?? CONFIG.EMBEDDING_THRESHOLD)),
       h('div', { class: 'step' },
         h('h3', null, h('span', { class: 'n' }, '4'), `Top ${cands.length || t.top_k || CONFIG.TOP_K} notes and the model’s check`),
-        h('p', null, 'The most similar notes, in order, each judged by a language model: does this note apply to this post? The highest-ranked note it accepts is the one CrossNote used.'),
+        h('p', null, 'The most similar notes, in order, each judged by a language model: does this note apply to this post? The highest-ranked note it accepts is the one crossnote used.'),
         cands.map((x) => {
           const isChosen = String(x.note_id) === String(d.chosen_note_id);
           const text = x.note ? decodeEntities(x.note.text) : '';
@@ -515,7 +515,7 @@ const CONFIG = {
           const body = await r.json().catch(() => ({}));
           if (!r.ok) throw new Error(body.message || `HTTP ${r.status}`);
           store.set(key, answer);
-          form.replaceWith(h('p', null, 'Thanks, your answer was recorded. It helps us measure how often CrossNote is right.'));
+          form.replaceWith(h('p', null, 'Thanks, your answer was recorded. It helps us measure how often crossnote is right.'));
           status.textContent = '';
         } catch (err) {
           status.textContent = `Couldn’t send your answer: ${err.message}`;
@@ -538,9 +538,9 @@ const CONFIG = {
 
   function resultView(d) {
     const c = (d.candidates || []).find((x) => String(x.note_id) === String(d.chosen_note_id)) || null;
-    document.title = 'CrossNote Explorer · Matched post';
+    document.title = 'crossnote explorer · Matched post';
     render(
-      header('Why CrossNote labeled this post', 'CrossNote matched this Bluesky post to a Community Note written on X for a post making the same claim.'),
+      header('Why crossnote labeled this post', 'crossnote matched this Bluesky post to a Community Note written on X for a post making the same claim.'),
       exampleNotice(),
       h('div', { class: 'notice' }, 'This is an automated match and may be wrong. The label is only shown to people who subscribe to ',
         ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), '.'),
@@ -555,13 +555,13 @@ const CONFIG = {
   }
 
   function notFoundView(uri) {
-    document.title = 'CrossNote Explorer · No label';
+    document.title = 'crossnote explorer · No label';
     render(
-      header('CrossNote hasn’t labeled this post', null),
+      header('crossnote hasn’t labeled this post', null),
       h('section', { class: 'card' },
-        h('p', null, 'There’s no current CrossNote label for ', ext(bskyUrlFromAt(uri) || '#', 'this post'), '. Most posts never get one. Some reasons:'),
+        h('p', null, 'There’s no current crossnote label for ', ext(bskyUrlFromAt(uri) || '#', 'this post'), '. Most posts never get one. Some reasons:'),
         h('ul', null,
-          h('li', null, 'CrossNote only checks posts from accounts that follow ', ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), ', and only posts made after they followed.'),
+          h('li', null, 'crossnote only checks posts from accounts that follow ', ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), ', and only posts made after they followed.'),
           h('li', null, 'The post didn’t make a claim that a recent Helpful Community Note corrects, or it was a reply.'),
           h('li', null, 'The label was removed, the post was deleted, or its author limits who can see their posts.'))),
       lookupCard(''),
@@ -613,12 +613,12 @@ const CONFIG = {
     }
     if (!uri) return homeView();
 
-    render(header('Looking up the post…'), h('p', { class: 'meta' }, 'Checking CrossNote’s records.'));
+    render(header('Looking up the post…'), h('p', { class: 'meta' }, 'Checking crossnote’s records.'));
     let r;
     try {
       r = await getJson(`${CONFIG.API_BASE}/demo/match?uri=${encodeURIComponent(uri)}`);
     } catch (e) {
-      render(header('CrossNote is unreachable'), errorCard('Couldn’t reach the CrossNote server.', 'Please try again in a few minutes.'), footer());
+      render(header('crossnote is unreachable'), errorCard('Couldn’t reach the crossnote server.', 'Please try again in a few minutes.'), footer());
       return;
     }
     if (r.status === 404) return notFoundView(uri);

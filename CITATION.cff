@@ -1,6 +1,6 @@
 cff-version: 1.2.0
-message: "If you use CrossNote, please cite the paper below."
-title: "CrossNote"
+message: "If you use crossnote, please cite the paper below."
+title: "crossnote"
 type: software
 authors:
   - family-names: Arora
@@ -15,7 +15,7 @@ authors:
     given-names: Ashish
     email: ashishg@stanford.edu
     affiliation: "Department of Management Science and Engineering, Stanford University"
-repository-code: "https://github.com/NishkaArora/CrossNote"
+repository-code: "https://github.com/NishkaArora/crossnote_bsky"
 license: MIT
 keywords:
   - bluesky
@@ -38,4 +38,4 @@ preferred-citation:
       given-names: Ashish
       affiliation: "Department of Management Science and Engineering, Stanford University"
   year: 2026
-  url: "https://github.com/NishkaArora/CrossNote/blob/main/paper/community-notes-across-platforms.pdf"
+  url: "https://github.com/NishkaArora/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf"

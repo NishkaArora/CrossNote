@@ -1,6 +1,6 @@
-# CrossNote
+# crossnote
 
-CrossNote is a Bluesky labeler that brings X's Community Notes to Bluesky. When a Bluesky post makes a claim that a recent Community Note (rated Helpful on X) already corrects, CrossNote applies a `misinformation` label to the post and replies with the full note and a link to the X post it was written for.
+crossnote is a Bluesky labeler that brings X's Community Notes to Bluesky. When a Bluesky post makes a claim that a recent Community Note (rated Helpful on X) already corrects, crossnote applies a `misinformation` label to the post and replies with the full note and a link to the X post it was written for.
 
 This repository contains the deployed system described in our paper, [*Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes*](paper/community-notes-across-platforms.pdf) (Nishka Arora, Yann Issam Aouidef and Ashish Goel, Stanford University).
 
@@ -41,7 +41,7 @@ flowchart LR
 | Stage 2 | the 3 notes with the highest embedding cosine | top 3 |
 | Stage 3 | an LLM judges whether each note applies to the post (`prompts/applicability.txt`); the highest-ranked applicable note is the match | `gpt-6.1-sol` |
 
-On a match, CrossNote signs a `misinformation` label for the post and replies with "Community Note from X, rated Helpful:", the note and a link to the X post, split into a thread when it's longer than 300 characters.
+On a match, crossnote signs a `misinformation` label for the post and replies with "Community Note from X, rated Helpful:", the note and a link to the X post, split into a thread when it's longer than 300 characters.
 
 In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (embedding) of known positives, Stage 2 has a Recall@3 of 100% with 5,000 distractor notes, and the Stage 3 model has 96.0% precision and 64.7% recall on a balanced set of 300 post–note pairs. End to end, the pipeline's matches had 72.6% precision in a held-out evaluation on the live Bluesky stream, and it recovered 70.1% of known-positive posts.
 
@@ -52,7 +52,7 @@ In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (e
 - **To see labels:** open [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.social) and subscribe to the labeler.
 - **To have your posts checked:** follow the account. In the default mode, only followers' posts are checked.
 - **If a label on your post is wrong:** [open a "Wrong label" issue](../../issues/new?template=wrong_label.yml) or email the contact below. We review every report and remove labels that don't apply.
-- **To see why a post was labeled:** paste its link into the [demo page](https://nishkaarora.github.io/CrossNote/). It shows the matched note, each stage's scores and the model's reasons, how long the correction took on Bluesky compared with X, and asks whether the match is right.
+- **To see why a post was labeled:** paste its link into the [demo page](https://nishkaarora.github.io/crossnote_bsky/). It shows the matched note, each stage's scores and the model's reasons, how long the correction took on Bluesky compared with X, and asks whether the match is right.
 
 ## Differences from the paper
 
@@ -162,7 +162,7 @@ The paper is in [`paper/community-notes-across-platforms.pdf`](paper/community-n
   title  = {Community Notes Across Platforms: Evaluating the Feasibility of Re-using Crowd-sourced Context Notes},
   year   = {2026},
   note   = {Preprint},
-  url    = {https://github.com/NishkaArora/CrossNote/blob/main/paper/community-notes-across-platforms.pdf}
+  url    = {https://github.com/NishkaArora/crossnote_bsky/blob/main/paper/community-notes-across-platforms.pdf}
 }
 ```
 

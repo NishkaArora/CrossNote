@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a dated note-library snapshot for the live CrossNote pipeline.
+"""Build a dated note-library snapshot for the live crossnote pipeline.
 
     data/library/<export-date>/
         notes.parquet          one row per kept note; row i <-> embeddings[i] <-> TF-IDF row i

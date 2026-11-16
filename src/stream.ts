@@ -1,4 +1,4 @@
-// Jetstream source for the CrossNote pipeline, in one of two modes:
+// Jetstream source for the crossnote pipeline, in one of two modes:
 //
 //   followers  (default) Jetstream only sends posts by accounts that follow
 //              the labeller; the follower list is refreshed every
