@@ -52,6 +52,7 @@ In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (e
 - **To see labels:** open [@crossnote.bsky.social](https://bsky.app/profile/crossnote.bsky.social) and subscribe to the labeler.
 - **To have your posts checked:** follow the account. In the default mode, only followers' posts are checked.
 - **If a label on your post is wrong:** [open a "Wrong label" issue](../../issues/new?template=wrong_label.yml) or email the contact below. We review every report and remove labels that don't apply.
+- **To see why a post was labeled:** paste its link into the [demo page](https://nishkaarora.github.io/CrossNote/). It shows the matched note, each stage's scores and the model's reasons, how long the correction took on Bluesky compared with X, and asks whether the match is right.
 
 ## Differences from the paper
 
@@ -103,6 +104,7 @@ The matcher checks `/data/library/CURRENT` every 5 minutes and swaps in a new sn
 | `EXCLUDED_DIDS` | empty | comma-separated DIDs whose posts are never processed |
 | `DISABLE_AUTO_LABEL` | off | `1` serves the label stream without watching Bluesky |
 | `ADMIN_TOKEN` | unset | enables `POST /admin/label` for manual labels |
+| `DEMO_ORIGINS` | empty | comma-separated origins allowed to send demo-page feedback |
 | `DATA_DIR` | `/data` | where logs are written |
 | `LIBRARY_ROOT` | `/data/library` | where library snapshots live |
 | `X_BEARER_TOKEN` | | library build only |
@@ -110,14 +112,17 @@ The matcher checks `/data/library/CURRENT` every 5 minutes and swaps in a new sn
 **Repository layout**
 
 ```
-src/           Node labeler: label stream, Jetstream, replies, admin endpoint
+src/           Node labeler: label stream, Jetstream, replies, admin and demo endpoints
 pipeline/      Python matcher served on a unix socket
 library/       note library build and upload
 configs/       thresholds and model settings (paper and deployment)
 prompts/       LLM prompts for the library filters and Stage 3
 data/          Community Notes download script
 scripts/       one-off tools (publish label definitions, list recent labels)
+demo/          static demo page, deployed to GitHub Pages by .github/workflows/pages.yml
 ```
+
+**Demo page.** `demo/` is a static page on GitHub Pages that reads `GET /demo/match` and `GET /demo/summary` from the labeler and sends answers to `POST /demo/feedback` (`src/demo-api.ts`). To preview it, run `python3 -m http.server 8000` in `demo/` and open `http://localhost:8000/?example=1`, or add `?api=http://localhost:8080` to point it at a local labeler. To enable it on a fork: set Pages' source to "GitHub Actions", set `API_BASE` in `demo/index.html` to your Fly app, and set `DEMO_ORIGINS` in `fly.toml` to your Pages origin.
 
 ## Data and ethics
 
@@ -126,6 +131,9 @@ scripts/       one-off tools (publish label definitions, list recent labels)
 - For each match: the post's `at://` URI (which contains the author's DID), the note ID, similarity scores, the LLM's short reason, and whether a label and reply were posted. No post text.
 - For posts that reach Stage 3 but don't match: scores and note IDs only, with no URI or text.
 - Counts of posts processed per minute.
+- Answers sent from the demo page: the post's URI, the note ID, yes/no/not sure and an optional comment. No IP address or account.
+
+**The demo page** shows one post at a time, looked up by its link, and only while the post is labeled: there is no list of labeled posts or accounts. A post's page stops working if its label is removed, the post is deleted, its author is excluded, or its author has asked Bluesky not to show their posts to logged-out viewers.
 
 **What leaves the system:** text of a post that passes the TF-IDF gate (computed locally) is sent to the OpenAI API for embedding, and to Stage 3 if it also passes the embedding gate. Labels and replies are public on Bluesky.
 

@@ -29,15 +29,15 @@ export type StreamMode = "followers" | "full";
 const LABEL_VALUE         = "misinformation";
 const DRY_RUN             = process.env.CROSSNOTE_DRY_RUN !== "0";
 const DATA_DIR            = process.env.DATA_DIR ?? "/data";
-const MATCH_LOG_PATH      = process.env.MATCH_LOG_PATH ?? join(DATA_DIR, "crossnote_matches.jsonl");
+export const MATCH_LOG_PATH = process.env.MATCH_LOG_PATH ?? join(DATA_DIR, "crossnote_matches.jsonl");
 const RATE_CSV_PATH       = process.env.RATE_CSV_PATH ?? join(DATA_DIR, "stream_rate.csv");
-const PUBLIC_APPVIEW      = "https://public.api.bsky.app";
+export const PUBLIC_APPVIEW = "https://public.api.bsky.app";
 const JETSTREAM_MAX_DIDS  = 10_000;  // Jetstream's wantedDids limit
 const FOLLOWER_REFRESH_MS = parseInt(process.env.FOLLOWER_REFRESH_SECONDS ?? "300", 10) * 1000;
 const MAX_REPLIES_PER_HOUR = parseInt(process.env.MAX_REPLIES_PER_HOUR ?? "20", 10);
 // Accounts that asked to be excluded: their posts are dropped before any
 // processing or logging, in every mode.
-const EXCLUDED_DIDS = new Set(
+export const EXCLUDED_DIDS = new Set(
   (process.env.EXCLUDED_DIDS ?? "").split(",").map((d) => d.trim()).filter(Boolean));
 const STARTUP_RETRY_MS    = 30_000;
 const MAX_REPLAY_US       = 3600 * 1e6;  // ignore saved cursors older than 1h

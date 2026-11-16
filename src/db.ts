@@ -18,6 +18,17 @@ db.exec(`
     comment   TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  -- Answers from the demo page's "Does this note apply?" question. No IP
+  -- address or other visitor identifier is stored.
+  CREATE TABLE IF NOT EXISTS feedback (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    uri       TEXT NOT NULL,
+    note_id   TEXT NOT NULL,
+    answer    TEXT NOT NULL CHECK (answer IN ('yes', 'no', 'unsure')),
+    comment   TEXT,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // Migrate existing databases that predate the comment column
@@ -43,6 +54,11 @@ export function setCursor(cursor: number): void {
 export function hasLabel(uri: string): boolean {
   const row = db.prepare("SELECT 1 FROM labels WHERE uri = ? LIMIT 1").get(uri);
   return row !== undefined;
+}
+
+export function logFeedback(uri: string, noteId: string, answer: "yes" | "no" | "unsure", comment: string | null): void {
+  db.prepare("INSERT INTO feedback (uri, note_id, answer, comment) VALUES (?, ?, ?, ?)")
+    .run(uri, noteId, answer, comment);
 }
 
 export function removeLabel(uri: string, val: string): void {

@@ -6,6 +6,7 @@ import WebSocket from "ws";
 import { LabelerServer } from "./labeler-server.js";
 import { startStream, streamStats, type StreamMode } from "./stream.js";
 import * as db from "./db.js";
+import { demoRouter } from "./demo-api.js";
 
 // @skyware/jetstream expects a global WebSocket; Node 20 doesn't have one built-in
 (global as any).WebSocket = WebSocket;
@@ -48,6 +49,9 @@ const MODE = MODE_RAW as StreamMode;
 
 app.get("/", (_req, res) => res.send("CrossNote Labeler is running"));
 app.get("/stats", (_req, res) => res.json(streamStats));
+
+// API for the demo page in demo/ (GitHub Pages). See src/demo-api.ts.
+app.use("/demo", demoRouter);
 
 // Constant-time comparison of SHA-256 digests (equal length by construction).
 function tokenMatches(header: string | undefined, token: string): boolean {

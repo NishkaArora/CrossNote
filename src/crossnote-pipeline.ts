@@ -2,7 +2,7 @@
 // socket started by start.sh.
 import { Agent, fetch } from "undici";
 
-const SOCKET_PATH = "/tmp/pipeline.sock";
+const SOCKET_PATH = process.env.PIPELINE_SOCKET ?? "/tmp/pipeline.sock";
 
 const socketAgent = new Agent({
   connect: { socketPath: SOCKET_PATH, timeout: 5_000 },
@@ -66,6 +66,44 @@ function drain(): void {
       .then(task.resolve, task.reject)
       .finally(() => { inFlight--; drain(); });
   }
+}
+
+// ── Demo page lookups (src/demo-api.ts) ──────────────────────────────────────
+
+export interface DemoNote {
+  note_id: string;
+  tweet_id: string;
+  text: string;
+  note_created_at: string | null;
+  note_helpful_at: string | null;
+  x_post_created_at: string | null;
+}
+
+export interface DemoNotes {
+  library: { name: string; export_date: string | null; built_at: string | null; notes: number };
+  thresholds: { min_words_exclusive: number | null; tfidf: number | null; embedding: number | null; top_k: number | null };
+  notes: Record<string, DemoNote>;
+}
+
+/** Note text and timestamps from a library snapshot. Null if the snapshot is gone. */
+export async function fetchDemoNotes(library: string, noteIds: string[]): Promise<DemoNotes | null> {
+  const response = await fetch("http://localhost/demo/notes", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ library, note_ids: noteIds }),
+    dispatcher: socketAgent,
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`matcher /demo/notes → HTTP ${response.status}`);
+  return (await response.json()) as DemoNotes;
+}
+
+/** The snapshot the matcher is using now. */
+export async function fetchMatcherHealth(): Promise<{ ready: boolean; library: string | null; notes: number }> {
+  const response = await fetch("http://localhost/health", { dispatcher: socketAgent, signal: AbortSignal.timeout(5_000) });
+  if (!response.ok) throw new Error(`matcher /health → HTTP ${response.status}`);
+  return (await response.json()) as { ready: boolean; library: string | null; notes: number };
 }
 
 /** Runs the post through Stages 1-3. Resolves null if the queue is full. */

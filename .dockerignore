@@ -6,3 +6,4 @@ dist/
 data/
 .venv/
 local-data/
+demo/
