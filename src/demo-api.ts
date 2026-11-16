@@ -159,13 +159,6 @@ function tidMillis(rkey: string): number | null {
   return Number((v >> 10n) / 1000n);
 }
 
-function median(xs: number[]): number | null {
-  if (!xs.length) return null;
-  const s = [...xs].sort((a, b) => a - b);
-  const mid = s.length >> 1;
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-}
-
 // ── Feedback rate limit (in memory) ──────────────────────────────────────────
 
 const feedbackTimes = new Map<string, number[]>();
@@ -304,39 +297,30 @@ demoRouter.get("/match", async (req, res) => {
 
 let summaryCache: { at: number; body: unknown } | null = null;
 
+/** Sum of likeCount over posts, from the public AppView (25 per request). Null if Bluesky can't be reached. */
+async function totalLikes(uris: string[]): Promise<number | null> {
+  let total = 0;
+  try {
+    for (let i = 0; i < uris.length; i += 25) {
+      const url = new URL(`${PUBLIC_APPVIEW}/xrpc/app.bsky.feed.getPosts`);
+      for (const u of uris.slice(i, i + 25)) url.searchParams.append("uris", u);
+      const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { posts?: { likeCount?: number }[] };
+      for (const p of body.posts ?? []) total += p.likeCount ?? 0;
+    }
+  } catch {
+    return null;
+  }
+  return total;
+}
+
 demoRouter.get("/summary", async (_req, res) => {
   if (summaryCache && Date.now() - summaryCache.at < SUMMARY_CACHE_MS) {
     res.json(summaryCache.body);
     return;
   }
   const live = liveMatches();
-
-  // Post → label, with the post time taken from its record key.
-  const labelDelays = live.flatMap((m) => {
-    const t = tidMillis(m.uri.split("/").pop() ?? "");
-    const d = t ? Date.parse(m.ts) - t : NaN;
-    return Number.isFinite(d) && d >= 0 && d < 7 * 86400_000 ? [d] : [];
-  });
-
-  // X post → note first rated Helpful, for the notes crossnote applied.
-  const byLibrary = new Map<string, Set<string>>();
-  for (const m of live) {
-    if (!m.library) continue;
-    if (!byLibrary.has(m.library)) byLibrary.set(m.library, new Set());
-    byLibrary.get(m.library)!.add(m.note_id);
-  }
-  const xDelays: number[] = [];
-  for (const [library, ids] of byLibrary) {
-    try {
-      const notes = await fetchDemoNotes(library, [...ids].slice(0, 200));
-      for (const n of Object.values(notes?.notes ?? {})) {
-        const d = Date.parse(n.note_helpful_at ?? "") - Date.parse(n.x_post_created_at ?? "");
-        if (Number.isFinite(d) && d >= 0) xDelays.push(d);
-      }
-    } catch {
-      // matcher down: leave the X numbers out
-    }
-  }
 
   let library: { name: string | null; notes: number } | null = null;
   try {
@@ -346,9 +330,9 @@ demoRouter.get("/summary", async (_req, res) => {
 
   const body = {
     labeled_posts: live.length,
-    median_label_delay_ms: median(labelDelays),
-    median_x_delay_ms: median(xDelays),
-    x_delay_notes: xDelays.length,
+    unique_notes: new Set(live.map((m) => m.note_id)).size,
+    // Deleted posts no longer count: Bluesky doesn't return them.
+    total_likes: await totalLikes(live.map((m) => m.uri)),
     library,
     generated_at: new Date().toISOString(),
   };
