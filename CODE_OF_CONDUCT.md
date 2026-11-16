@@ -11,5 +11,3 @@ Report conduct issues to any of the maintainers (Department of Management Scienc
 - Nishka Arora, **nishkaa@stanford.edu**
 - Yann Issam Aouidef, **yaouidef@stanford.edu**
 - Ashish Goel, **ashishg@stanford.edu**
-
-Reports are kept confidential. Maintainers will respond, and may warn, temporarily ban or permanently ban participants as described in the Covenant's enforcement guidelines.
