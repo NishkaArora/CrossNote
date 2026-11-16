@@ -59,7 +59,7 @@ In the paper's evaluation, the Stage 1 thresholds keep 100% (lexical) and 99% (e
 |---|---|---|
 | LLM for Stage 3 and the library filters | `gpt-5.6-sol` (Stage 3), `gpt-5.6` (filters) | `gpt-6.1-sol` for both |
 | Model versions | bare OpenAI aliases at the dates in `configs/models.yaml` | bare aliases, not pinned; the underlying model can change |
-| Note library | fixed evaluation set | 7-day window of notes before each build's export date; rebuilt periodically, not daily |
+| Note library | fixed evaluation set | 7-day window of notes before each build's export date; rebuilt periodically |
 
 Thresholds, prompts and the Stage 2 cutoff are the ones the paper evaluated (`configs/thresholds.yaml`, `prompts/`). Deployment-only settings are in `configs/pipeline.yaml`. Because the LLM differs, live precision and recall may differ from the paper's numbers.
 
