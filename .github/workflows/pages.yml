@@ -1,7 +1,8 @@
 name: Deploy demo to GitHub Pages
 
-# Publishes demo/ as a static site. In the repository settings, set
-# Pages → Build and deployment → Source to "GitHub Actions".
+# Publishes demo/, which now only redirects the old
+# crossnote-bsky.github.io/crossnote_bsky/ links to the demo's own repo,
+# crossnote-bsky/inspect_and_give_feedback.
 
 on:
   push:

@@ -19,17 +19,40 @@ db.exec(`
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  -- Answers from the demo page's "Does this note apply?" question. No IP
+  -- Answers from the demo page's "Is this a good match?" question. No IP
   -- address or other visitor identifier is stored.
   CREATE TABLE IF NOT EXISTS feedback (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     uri       TEXT NOT NULL,
     note_id   TEXT NOT NULL,
-    answer    TEXT NOT NULL CHECK (answer IN ('yes', 'no', 'unsure')),
+    answer    TEXT NOT NULL CHECK (answer IN ('yes', 'almost', 'no', 'unsure')),
     comment   TEXT,
     createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// Feedback tables created before "almost" was an answer: rebuild with the
+// wider CHECK and copy every row across ("unsure" stays valid for old rows).
+{
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'feedback'").get() as
+    { sql: string } | undefined;
+  if (row && !row.sql.includes("'almost'")) {
+    db.transaction(() => {
+      db.exec("ALTER TABLE feedback RENAME TO feedback_old");
+      db.exec(`CREATE TABLE feedback (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        uri       TEXT NOT NULL,
+        note_id   TEXT NOT NULL,
+        answer    TEXT NOT NULL CHECK (answer IN ('yes', 'almost', 'no', 'unsure')),
+        comment   TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      db.exec("INSERT INTO feedback (id, uri, note_id, answer, comment, createdAt) " +
+              "SELECT id, uri, note_id, answer, comment, createdAt FROM feedback_old");
+      db.exec("DROP TABLE feedback_old");
+    })();
+  }
+}
 
 // Migrate existing databases that predate the comment column
 try {
@@ -56,7 +79,9 @@ export function hasLabel(uri: string): boolean {
   return row !== undefined;
 }
 
-export function logFeedback(uri: string, noteId: string, answer: "yes" | "no" | "unsure", comment: string | null): void {
+export type FeedbackAnswer = "yes" | "almost" | "no";
+
+export function logFeedback(uri: string, noteId: string, answer: FeedbackAnswer, comment: string | null): void {
   db.prepare("INSERT INTO feedback (uri, note_id, answer, comment) VALUES (?, ?, ?, ?)")
     .run(uri, noteId, answer, comment);
 }
