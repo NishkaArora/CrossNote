@@ -2,7 +2,7 @@
 //
 //   GET  /demo/match?uri=at://...   why one labelled post was matched
 //   GET  /demo/summary              aggregate numbers for the front page
-//   POST /demo/feedback             "Does this note apply?" answer
+//   POST /demo/feedback             "Is this a good match?": yes, almost or no
 //   POST /demo/rerun                the pipeline on an edited version of a labelled post
 //
 // Only posts that are labelled right now are served, one at a time by URI:
@@ -347,8 +347,8 @@ demoRouter.post("/feedback", express.json({ limit: "4kb" }), (req, res) => {
     return;
   }
   const { uri, answer, comment } = (req.body ?? {}) as Record<string, unknown>;
-  if (typeof uri !== "string" || !POST_URI.test(uri) || (answer !== "yes" && answer !== "no" && answer !== "unsure")) {
-    res.status(400).json({ error: "InvalidRequest", message: "uri and answer (yes, no or unsure) are required" });
+  if (typeof uri !== "string" || !POST_URI.test(uri) || (answer !== "yes" && answer !== "almost" && answer !== "no")) {
+    res.status(400).json({ error: "InvalidRequest", message: "uri and answer (yes, almost or no) are required" });
     return;
   }
   if (comment != null && typeof comment !== "string") {
