@@ -8,44 +8,34 @@
 <link rel="icon" href="data:,">
 <title>crossnote explorer</title>
 <style>
+  /* Palette from the crossnote slides: white, #1675EB, and its tints #F4FAFF / #E7F5FF / #D3EAF8.
+     --link is a slightly deeper #1675EB so small blue text and the button label meet WCAG AA. */
   :root {
-    --bg: #f6f6f3;
-    --surface: #ffffff;
-    --ink: #1b1b1b;
-    --ink-2: #3d3d3d;
-    --muted: #686868;
-    --line: #e3e3de;
-    --accent: #1d5fd8;
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #f4faff;
+    --raised: #ffffff;
+    --ink: #111111;
+    --ink-2: #333a45;
+    --muted: #5d6877;
+    --line: #d3eaf8;
+    --brand: #1675eb;
+    --link: #1266d0;
+    --link-hover: #0f57b3;
     --accent-ink: #ffffff;
-    --accent-track: #dbe6fb;
-    --tick: #1b1b1b;
+    --accent-track: #d3eaf8;
+    --tick: #111111;
     --ok: #17703a;
     --ok-bg: #e5f3ea;
     --no: #a8261c;
     --no-bg: #fbe9e7;
-    --neutral-bg: #ececea;
-    --warn-bg: #fff6e3;
-    --warn-line: #efd398;
-    --chosen: #eef3fe;
-    --chosen-line: #c9d8fb;
-    --x: #1b1b1b;
-    --bsky: #1d5fd8;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #131414; --surface: #1d1e1f; --ink: #ececea; --ink-2: #cfcfcc; --muted: #a2a29e;
-      --line: #34353a; --accent: #7aa5ff; --accent-ink: #0d1526; --accent-track: #233559; --tick: #ececea;
-      --ok: #74d394; --ok-bg: #173323; --no: #ff9387; --no-bg: #3a1e1b; --neutral-bg: #2a2b2d;
-      --warn-bg: #33291a; --warn-line: #6a5426; --chosen: #1a2540; --chosen-line: #2f4677;
-      --x: #ececea; --bsky: #7aa5ff;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #131414; --surface: #1d1e1f; --ink: #ececea; --ink-2: #cfcfcc; --muted: #a2a29e;
-    --line: #34353a; --accent: #7aa5ff; --accent-ink: #0d1526; --accent-track: #233559; --tick: #ececea;
-    --ok: #74d394; --ok-bg: #173323; --no: #ff9387; --no-bg: #3a1e1b; --neutral-bg: #2a2b2d;
-    --warn-bg: #33291a; --warn-line: #6a5426; --chosen: #1a2540; --chosen-line: #2f4677;
-    --x: #ececea; --bsky: #7aa5ff;
+    --neutral-bg: #e7f5ff;
+    --notice-bg: #e7f5ff;
+    --notice-line: #d3eaf8;
+    --chosen: #e7f5ff;
+    --chosen-line: #1675eb;
+    --x: #111111;
+    --bsky: #1675eb;
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -53,14 +43,17 @@
     margin: 0; background: var(--bg); color: var(--ink);
     font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  a { color: var(--accent); }
+  a { color: var(--link); }
+  a:hover { color: var(--link-hover); }
   main { max-width: 960px; margin: 0 auto; padding: 28px 16px 64px; }
   header { margin-bottom: 8px; }
-  .brand { font-weight: 700; font-size: 17px; letter-spacing: .01em; color: var(--accent); text-decoration: none; }
-  header h1 { font-size: 26px; line-height: 1.25; margin: 4px 0 6px; text-wrap: balance; }
+  .brand { display: inline-block; font-weight: 800; font-size: 24px; letter-spacing: -.01em; line-height: 1.1; color: var(--ink); text-decoration: none; }
+  .brand::after { content: ""; display: block; width: 40px; height: 4px; margin-top: 6px; background: var(--brand); }
+  a.brand:hover { color: var(--ink); }
+  header h1 { font-size: 26px; line-height: 1.25; margin: 18px 0 6px; text-wrap: balance; }
   header p { margin: 0; color: var(--muted); max-width: 680px; }
-  .notice { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 10px; padding: 10px 14px; margin: 18px 0; font-size: 14px; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .notice { background: var(--notice-bg); border: 1px solid var(--notice-line); border-radius: 10px; padding: 10px 14px; margin: 18px 0; font-size: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin: 16px 0; }
   .card > h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
   .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
@@ -73,25 +66,35 @@
   .pill.ok { background: var(--ok-bg); color: var(--ok); }
   .pill.no { background: var(--no-bg); color: var(--no); }
   .pill.neutral { background: var(--neutral-bg); color: var(--ink-2); }
-  .pill.shown { background: var(--accent); color: var(--accent-ink); }
-  .btn { font: inherit; display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: var(--surface); cursor: pointer; }
-  .btn:hover { border-color: var(--accent); }
-  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-  .btn[aria-pressed="true"] { border-color: var(--accent); background: var(--chosen); font-weight: 600; }
+  .pill.shown { background: var(--link); color: var(--accent-ink); }
+  .btn { font: inherit; display: inline-block; padding: 7px 16px; border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); background: var(--raised); cursor: pointer; }
+  .btn:hover { border-color: var(--brand); }
+  .btn.primary { background: var(--link); color: var(--accent-ink); border-color: var(--link); font-weight: 600; }
+  .btn.primary:hover:not(:disabled) { background: var(--link-hover); border-color: var(--link-hover); }
+  .btn[aria-pressed="true"] { border-color: var(--brand); background: var(--chosen); font-weight: 600; }
   .btn:disabled { opacity: .55; cursor: default; }
   .lookup { display: flex; gap: 8px; flex-wrap: wrap; }
-  .lookup input { flex: 1 1 280px; min-width: 0; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
-  .lookup input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  textarea { width: 100%; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); resize: vertical; min-height: 70px; }
+  .lookup input { flex: 1 1 280px; min-width: 0; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--raised); color: var(--ink); }
+  .lookup input:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  textarea { width: 100%; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--raised); color: var(--ink); resize: vertical; min-height: 70px; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-  .tile { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .tile { background: var(--raised); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
   .tile .label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
   .tile .value { font-size: 30px; font-weight: 600; line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums; }
   .tile .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .card.tight { padding: 12px 16px; }
+  .card.tight > h2 { margin-bottom: 8px; }
+  .tiles.compact { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .tiles.compact:has(> :only-child) { grid-template-columns: minmax(0, 220px); }
+  @media (max-width: 640px) { .tiles.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .compact .tile { padding: 8px 12px; }
+  .compact .tile .label { font-size: 12px; }
+  .compact .tile .value { font-size: 20px; margin-top: 0; }
+  .compact .tile .sub { font-size: 12px; margin-top: 0; }
   .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
   .timeline { list-style: none; margin: 14px 0 0; padding: 0; }
   .timeline li { position: relative; padding: 0 0 14px 24px; }
-  .timeline li::before { content: ""; position: absolute; left: 3px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--dot, var(--accent)); box-shadow: 0 0 0 2px var(--surface); }
+  .timeline li::before { content: ""; position: absolute; left: 3px; top: 6px; width: 11px; height: 11px; border-radius: 50%; background: var(--dot, var(--brand)); box-shadow: 0 0 0 2px var(--surface); }
   .timeline li::after { content: ""; position: absolute; left: 8px; top: 19px; bottom: 0; width: 1px; background: var(--line); }
   .timeline li:last-child::after { display: none; }
   .timeline .what { font-weight: 600; }
@@ -106,11 +109,11 @@
   .step p { margin: 0 0 6px; }
   .meter { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; margin: 8px 0 2px; max-width: 560px; }
   .meter .bar { position: relative; height: 8px; border-radius: 999px; background: var(--accent-track); }
-  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); }
+  .meter .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--brand); }
   .meter .tick { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: var(--tick); border-radius: 1px; }
   .meter .fig { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; }
   .meter .cap { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
-  .cand { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; }
+  .cand { background: var(--raised); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; }
   .cand.chosen { background: var(--chosen); border-color: var(--chosen-line); }
   .cand .top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .cand .excerpt { margin: 6px 0 4px; overflow-wrap: anywhere; }
@@ -258,12 +261,9 @@ const CONFIG = {
   }
   function footer(extra) {
     return h('footer', null,
-      h('p', null, 'crossnote finds Bluesky posts that make a claim a Community Note on X already corrects, labels them through a Bluesky labeler, and replies with the note.'),
-      h('p', null,
-        ext(`https://bsky.app/profile/${CONFIG.LABELER_HANDLE}`, '@' + CONFIG.LABELER_HANDLE), ' · ',
-        ext(CONFIG.REPO_URL, 'Code and method'),
-        CONFIG.PAPER_URL ? [' · ', ext(CONFIG.PAPER_URL, 'Paper')] : null,
-        ' · ', ext(`${CONFIG.REPO_URL}/issues/new?template=wrong_label.yml`, 'Report a wrong label')),
+      h('p', null, 'More info: ',
+        CONFIG.PAPER_URL ? [ext(CONFIG.PAPER_URL, 'Paper'), ' · '] : null,
+        ext(CONFIG.REPO_URL, 'GitHub')),
       extra ? h('p', null, extra) : null);
   }
   function errorCard(title, detail) {
@@ -319,57 +319,41 @@ const CONFIG = {
       h('h2', null, 'Look up a post'),
       form, msg,
       h('p', { class: 'meta', id: 'lookup-help' },
-        'On Bluesky, open the post’s ··· menu and choose “Copy link to post”. ',
-        'Only posts crossnote has labeled have a page. ',
+        'On Bluesky: ··· → Copy link to post. Only labeled posts have a page. ',
         h('a', { href: '?example=1' }, 'See an example')));
   }
 
-  function howItWorksCard() {
-    return h('section', { class: 'card' },
-      h('h2', null, 'How crossnote matches a post'),
-      h('p', null, 'crossnote doesn’t write fact-checks. It reuses Community Notes that X raters have already rated Helpful, so a Bluesky post making the same claim can be labeled within minutes.'),
-      h('ol', { class: 'how' },
-        h('li', null, h('b', null, 'Note library. '), 'Notes first rated Helpful on X in the past week, kept only if their X post is in English and the note makes sense without a particular author, image or video.'),
-        h('li', null, h('b', null, 'Post filters. '), 'Original posts and quote posts (no replies), in English or untagged, longer than two words.'),
-        h('li', null, h('b', null, 'Word overlap. '), `The post’s highest TF-IDF similarity to any note must be at least ${CONFIG.TFIDF_THRESHOLD.toFixed(3)}. This step runs locally and is cheap.`),
-        h('li', null, h('b', null, 'Meaning. '), `Its highest embedding similarity (text-embedding-3-large) to any note must be at least ${CONFIG.EMBEDDING_THRESHOLD.toFixed(3)}.`),
-        h('li', null, h('b', null, `Top ${CONFIG.TOP_K}. `), `The ${CONFIG.TOP_K} most similar notes go to a language model, which judges whether each note applies to the post (`, ext(`${CONFIG.REPO_URL}/blob/main/prompts/applicability.txt`, 'prompt'), ').'),
-        h('li', null, h('b', null, 'Label and reply. '), 'The highest-ranked note the model accepts is attached as a misinformation label, and the bot replies with the full note and a link to the X post.')),
-      h('p', { class: 'meta' }, 'In the paper’s test on the live Bluesky stream, annotators judged 72.6% of the pipeline’s matches correct. Some matches are wrong, which is why each result page asks whether the match is right.'));
-  }
-
-  function privacyCard() {
-    return h('section', { class: 'card' },
-      h('h2', null, 'What this page shows'),
-      h('p', null, 'A post has a page here only while it carries a crossnote label. Pages disappear if the label is removed, the post is deleted, or its author excludes their posts from logged-out viewers or asks to be excluded from crossnote. There is no list of labeled posts.'),
-      h('p', { class: 'meta' }, 'No post text is stored by crossnote; posts are shown through Bluesky’s and X’s own embeds. ',
-        ext(`${CONFIG.REPO_URL}#data`, 'What crossnote stores')));
-  }
-
-  async function summaryCard() {
-    const box = h('section', { class: 'card', hidden: true }, h('h2', null, 'So far'));
+  // Renders at once and fills in when the numbers arrive, so a slow API never holds up the page.
+  function summaryCard() {
+    const row = h('div', { class: 'tiles compact' });
+    const box = h('section', { class: 'card tight', hidden: true }, h('h2', null, 'So far'), row);
     if (EXAMPLE) return box;
-    getJson(`${CONFIG.API_BASE}/demo/summary`).then(({ ok, body }) => {
-      if (!ok || !body) return;
-      box.append(h('div', { class: 'tiles' },
-        tile('Posts labeled', (body.labeled_posts ?? 0).toLocaleString()),
-        body.median_label_delay_ms != null ? tile('Bluesky post → crossnote label', fmtDur(body.median_label_delay_ms), 'median', 'var(--bsky)') : null,
-        body.median_x_delay_ms != null ? tile('X post → Helpful note on X', fmtDur(body.median_x_delay_ms), `median over the ${body.x_delay_notes} notes used`, 'var(--x)') : null,
-        body.library && body.library.notes ? tile('Notes in the library now', body.library.notes.toLocaleString()) : null));
-      box.hidden = false;
-    }).catch(() => {});
+    const profile = new URL('https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile');
+    profile.searchParams.set('actor', CONFIG.LABELER_HANDLE);
+    Promise.all([
+      getJson(`${CONFIG.API_BASE}/demo/summary`).catch(() => ({})),
+      getJson(profile).catch(() => ({})),
+    ]).then(([summary, prof]) => {
+      const b = (summary.ok && summary.body) || {};
+      const followers = prof.ok && prof.body ? prof.body.followersCount : null;
+      const tiles = [
+        b.labeled_posts != null ? tile('Posts labeled', b.labeled_posts.toLocaleString()) : null,
+        typeof followers === 'number' ? tile('Followers', followers.toLocaleString()) : null,
+        b.median_x_delay_ms != null ? tile('X post → Helpful note', fmtDur(b.median_x_delay_ms), 'median on X') : null,
+        b.library && b.library.notes ? tile('Notes in library', b.library.notes.toLocaleString()) : null,
+      ].filter(Boolean);
+      row.append(...tiles);
+      box.hidden = tiles.length === 0;
+    });
     return box;
   }
 
   async function homeView(message) {
     document.title = 'crossnote explorer';
     render(
-      header('See why crossnote labeled a post', 'Paste a Bluesky post to see the Community Note it was matched to, how each step of the pipeline scored it, and how long the correction took compared with X.'),
-      exampleNotice(),
+      header('See why crossnote labeled a post', 'Paste a Bluesky post link to see the Community Note it was matched to and how it was scored.'),
       lookupCard(params.get('post') || '', message),
-      await summaryCard(),
-      howItWorksCard(),
-      privacyCard(),
+      summaryCard(),
       footer());
   }
 
@@ -405,43 +389,29 @@ const CONFIG = {
         replyUrl ? [' · ', ext(replyUrl, 'crossnote’s reply on Bluesky')] : null));
   }
 
+  // X side only: crossnote checks posts as they arrive (no backfill), so its own wait is always about a minute.
   function timingCard(d, c) {
     const n = (c && c.note) || {};
     const xPost = toDate(n.x_post_created_at), noteWritten = toDate(n.note_created_at), helpful = toDate(n.note_helpful_at);
-    const bskyPost = toDate(d.posted_at), labeled = toDate(d.labeled_at);
-    const xWait = xPost && helpful ? Math.max(0, helpful - xPost) : null;
-    // A post's createdAt is set by the author's app, so it can be a little off the label's clock.
-    const cnWait = bskyPost && labeled ? Math.max(0, labeled - bskyPost) : null;
-    if (xWait == null && cnWait == null) return null;
+    const bskyPost = toDate(d.posted_at);
+    if (!xPost || !helpful) return null;
 
-    // seq is the order the steps must happen in; it breaks near-ties caused by clock differences.
     const events = [
-      { seq: 0, d: xPost, what: 'Post published', where: 'X', dot: 'var(--x)' },
-      { seq: 1, d: noteWritten, what: 'Community Note written', where: 'X', dot: 'var(--x)' },
-      { seq: 2, d: helpful, what: 'Note rated Helpful', where: 'X', dot: 'var(--x)' },
-      { seq: 3, d: bskyPost, what: 'Post published', where: 'Bluesky', dot: 'var(--bsky)' },
-      { seq: 4, d: labeled, what: d.reply_uri ? 'crossnote labels it and replies with the note' : 'crossnote labels it', where: 'Bluesky', dot: 'var(--bsky)' },
-    ].filter((e) => e.d).sort((a, b) => (Math.abs(a.d - b.d) < 120000 ? a.seq - b.seq : a.d - b.d));
-
-    let sentence = null;
-    if (helpful && bskyPost && helpful <= bskyPost && cnWait != null) {
-      sentence = `The note had already been rated Helpful on X for ${fmtDur(bskyPost - helpful)} when this Bluesky post was published, so crossnote could apply it ${fmtDur(cnWait)} later.`;
-    } else if (cnWait != null) {
-      sentence = `crossnote labeled this post ${fmtDur(cnWait)} after it was published.`;
-    }
+      { d: xPost, what: 'Post published', where: 'X', dot: 'var(--x)' },
+      { d: noteWritten, what: 'Community Note written', where: 'X', dot: 'var(--x)' },
+      { d: helpful, what: 'Note rated Helpful', where: 'X', dot: 'var(--x)' },
+      { d: bskyPost, what: 'Post published', where: 'Bluesky', dot: 'var(--bsky)' },
+    ].filter((e) => e.d).sort((a, b) => a.d - b.d);
 
     return h('section', { class: 'card' },
-      h('h2', null, 'How long the correction took'),
-      h('div', { class: 'tiles' },
-        xWait != null ? tile('On X: post → Helpful note', fmtDur(xWait), 'raters wrote and agreed on the note', 'var(--x)') : null,
-        cnWait != null ? tile('On Bluesky: post → crossnote label', fmtDur(cnWait), 'the note was reused, not rewritten', 'var(--bsky)') : null),
-      sentence ? h('p', { class: 'summary' }, sentence) : null,
+      h('h2', null, 'Time to a Helpful note on X'),
+      h('div', { class: 'tiles compact' },
+        tile('X post → Helpful note', fmtDur(Math.max(0, helpful - xPost)))),
       h('ul', { class: 'timeline', 'aria-label': 'Timeline' },
         events.map((e, i) => h('li', { style: `--dot:${e.dot}` },
           h('div', { class: 'what' }, e.what, h('span', { class: 'where' }, ` · ${e.where}`)),
           h('div', { class: 'when' }, fmtTime(e.d),
-            i > 0 ? h('span', { class: 'gap' }, ` · ${fmtDur(Math.max(0, e.d - events[i - 1].d))} later`) : null)))),
-      h('p', { class: 'meta' }, 'The two waits measure different things: on X, people had to write and rate a new note; crossnote only had to recognise a claim that already had one.'));
+            i > 0 ? h('span', { class: 'gap' }, ` · ${fmtDur(Math.max(0, e.d - events[i - 1].d))} later`) : null)))));
   }
 
   function pipelineCard(d) {
