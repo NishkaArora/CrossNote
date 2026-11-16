@@ -360,7 +360,7 @@ const CONFIG = {
   async function homeView(message) {
     document.title = 'crossnote explorer';
     render(
-      header('See why crossnote labeled a post', 'Paste a Bluesky post link to see the Community Note it was matched to and how it was scored.'),
+      header('See why crossnote labeled a post, or give feedback','Paste a Bluesky post link to see the Community Note it was matched to and how it was scored.'),
       lookupCard(params.get('post') || '', message),
       summaryCard(),
       footer());
