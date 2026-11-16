@@ -343,7 +343,7 @@ const CONFIG = {
       h('h2', null, 'What this page shows'),
       h('p', null, 'A post has a page here only while it carries a crossnote label. Pages disappear if the label is removed, the post is deleted, or its author excludes their posts from logged-out viewers or asks to be excluded from crossnote. There is no list of labeled posts.'),
       h('p', { class: 'meta' }, 'No post text is stored by crossnote; posts are shown through Bluesky’s and X’s own embeds. ',
-        ext(`${CONFIG.REPO_URL}#data-and-ethics`, 'Data and ethics')));
+        ext(`${CONFIG.REPO_URL}#data`, 'What crossnote stores')));
   }
 
   async function summaryCard() {
