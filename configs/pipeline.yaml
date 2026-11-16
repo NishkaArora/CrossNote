@@ -8,7 +8,7 @@ library:
   # Notes enter the library if they are CURRENTLY_RATED_HELPFUL now and were
   # first rated Helpful (timestampMillisOfFirstNonNMRStatus, with
   # firstNonNMRStatus == CURRENTLY_RATED_HELPFUL) in the LIBRARY_WINDOW_DAYS
-  # days before the export date. Rebuilding daily replaces any
+  # days before the export date. Each rebuild replaces any
   # "time-sensitive" detection: old notes and notes no longer Helpful drop out.
   LIBRARY_WINDOW_DAYS: 7
   english_lang: en           # X API `lang` of the original post must equal this

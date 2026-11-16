@@ -13,7 +13,7 @@ the ones used in the paper's Stage 3 evaluation.
 
 The library is the snapshot folder named in <LIBRARY_ROOT>/CURRENT. The
 matcher checks that file every LIBRARY_CHECK_SECONDS and swaps in a new
-snapshot when it changes, so a daily rebuild needs no restart.
+snapshot when it changes, so a rebuild needs no restart.
 """
 from __future__ import annotations
 
